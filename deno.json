@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "dev": "deno run --watch main.ts"
+  },
+  "imports": {
+    "@openai/agents": "npm:@openai/agents@^0.0.10",
+    "@std/assert": "jsr:@std/assert@1"
+  }
+}
