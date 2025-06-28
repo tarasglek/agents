@@ -3,6 +3,9 @@
     "dev": "deno run --watch main.ts",
     "run": "rlwrap -a --history-filename=~/.taras-history  deno run --watch --allow-all main.ts"
   },
+  "compilerOptions": {
+    "noImplicitOverride": false
+  },
   "imports": {
     "@openai/agents": "npm:@openai/agents@^0.0.10",
     "@std/assert": "jsr:@std/assert@1",
