@@ -1,6 +1,7 @@
 {
   "tasks": {
-    "dev": "deno run --watch main.ts"
+    "dev": "deno run --watch main.ts",
+    "run": "rlwrap -a --history-filename=~/.taras-history  deno run --watch --allow-all main.ts"
   },
   "imports": {
     "@openai/agents": "npm:@openai/agents@^0.0.10",
