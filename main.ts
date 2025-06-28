@@ -2,13 +2,14 @@ import { Agent, AgentsError, run } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
-import { error } from "node:console";
 import {
   fetchProxyCurlLogger,
   prettyJsonLogger,
 } from "@tarasglek/fetch-proxy-curl-logger";
 
 import { setOpenAIAPI } from '@openai/agents';
+import { DictStore, Store } from "./storage-combinators.ts";
+import { open } from "node:fs";
 
 setOpenAIAPI('chat_completions');
 
@@ -42,6 +43,18 @@ const triageAgent = new Agent({
   handoffs: [historyTutorAgent, mathTutorAgent],
 });
 
+const chatHistory = new DictStore<string>();
+
+const configDir = "."
+
+function replayJSONL<T>(src: string, dest: Store<T>) {
+  for each line in open(src) {
+    const { key, operation, value } = line
+    if(operation === "delete") {
+    dest.delete(key);
+  } ....
+}
+
 async function main() {
   const customClient = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
@@ -69,8 +82,11 @@ async function main() {
     }
   }
   await stream.completed;
-  // console.log(stream.finalOutput);
-  // console.log(stringify(stream.rawResponses));
+  console.log("rawResponses:");
+  console.log(stringify(stream.rawResponses));
+  console.log("history:");
+  console.log(stringify(stream.history));
+  console.log(stream.finalOutput);
   // console.log(stringify(stream.state))
 }
 
