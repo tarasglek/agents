@@ -71,8 +71,10 @@ export async function replayJSONL<T>(
 
 export class JSONAppender<T> extends Store<T> {
     constructor(public filename: string) {
+        super();
     }
     async put(_ref: string, data: T): Promise<void> {
-        //open  filename and append JSON.stringify(data) \n to it and close it
+        const line = JSON.stringify(data) + "\n";
+        await fs.appendFile(this.filename, line, "utf-8");
     }
 }
