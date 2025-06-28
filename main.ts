@@ -74,10 +74,12 @@ async function main() {
   const chatMessages = new RelativeStore<Message>(allMessages, currentChat.id);
 
   const msgHistory: AgentInputItem[] = []
-  const prevMsgID = currentChat.msgID;
+  let prevMsgID = currentChat.msgID;
   while (prevMsgID) {
     const msg = await chatMessages.get(prevMsgID)
-    prepend msg to msgHistory
+    if (msg) {
+      msgHistory.unshift(msg.item);
+    }
     prevMsgID = msg?.prevID;
   }
   const userInput = prompt(">");
