@@ -4,21 +4,33 @@ import * as path from 'node:path';
 // Based on "Storage Combinators" paper.
 
 /**
- * The Store interface, based on the Storage protocol from Figure 3.
+ * The Store class, based on the Storage protocol from Figure 3.
  * It provides a generic, REST-like interface for accessing data.
+ * This base class provides default implementations that throw "Not implemented" errors.
  */
-export interface Store<T> {
-    get(ref: string): Promise<T | null>;
-    put(ref: string, data: T): Promise<void>;
-    merge(ref: string, data: T): Promise<void>;
-    delete(ref: string): Promise<void>;
+export class Store<T> {
+    async get(ref: string): Promise<T | null> {
+        throw new Error("Not implemented");
+    }
+
+    async put(ref: string, data: T): Promise<void> {
+        throw new Error("Not implemented");
+    }
+
+    async merge(ref: string, data: T): Promise<void> {
+        throw new Error("Not implemented");
+    }
+
+    async delete(ref: string): Promise<void> {
+        throw new Error("Not implemented");
+    }
 }
 
 /**
  * A Store that keeps data in an in-memory Map.
  * This is analogous to DictStore from the paper.
  */
-export class DictStore<T> implements Store<T> {
+export class DictStore<T> extends Store<T> {
     private readonly data = new Map<string, T>();
 
     async get(ref: string): Promise<T | null> {
@@ -47,18 +59,18 @@ export class DictStore<T> implements Store<T> {
 
 
 /**
- * A base interface for stores that handle metadata alongside data.
- * It extends the base Store interface, with the stored type constrained
+ * A base class for stores that handle metadata alongside data.
+ * It extends the base Store class, with the stored type constrained
  * to be an object containing data and optional metadata.
  */
-interface StoreWithMetadata<D, M> extends Store<{ data: D, metadata?: M }> { }
+export abstract class StoreWithMetadata<D, M> extends Store<{ data: D, metadata?: M }> {}
 
 /**
  * A Store for fetching resources over HTTP.
  * This acts as our primary data source.
  * It returns the response body as data, and a Store for the headers as metadata.
  */
-export class HttpStore implements StoreWithMetadata<string, Store<string>> {
+export class HttpStore extends StoreWithMetadata<string, Store<string>> {
     async get(ref: string): Promise<{ data: string; metadata?: Store<string> | undefined; } | null> {
         try {
             const response = await fetch(ref);
@@ -95,7 +107,7 @@ export class HttpStore implements StoreWithMetadata<string, Store<string>> {
  * A read-only Store for accessing HTTP Headers.
  * It lazily accesses headers from a Headers object.
  */
-export class HeadersStore implements Store<string> {
+export class HeadersStore extends Store<string> {
     private readonly headers: Headers;
 
     constructor(headers: Headers) {
@@ -123,7 +135,7 @@ export class HeadersStore implements Store<string> {
  * A Store for the local file system using node:fs/promises.
  * This will serve as our cache.
  */
-export class DiskStore implements Store<string> {
+export class DiskStore extends Store<string> {
     async get(ref: string): Promise<string | null> {
         try {
             return await fs.readFile(ref, 'utf-8');
@@ -171,7 +183,7 @@ export class DiskStore implements Store<string> {
  * A Store that logs to the console.
  * This acts as a sink for logging operations.
  */
-export class ConsoleStore implements Store<string> {
+export class ConsoleStore extends Store<string> {
     async get(ref: string): Promise<string | null> {
         throw new Error("ConsoleStore is write-only.");
     }
@@ -195,7 +207,7 @@ export class ConsoleStore implements Store<string> {
  * A RelativeStore combinator, based on Figure 15.
  * It maps references by prepending a prefix.
  */
-export class RelativeStore<T> implements Store<T> {
+export class RelativeStore<T> extends Store<T> {
     private readonly source: Store<T>;
     private readonly prefix: string;
     private readonly joiner: (a: string, b: string) => string;
@@ -232,7 +244,7 @@ export class RelativeStore<T> implements Store<T> {
  * It is generic over an input type `In` (the type this store presents) and
  * an output type `Out` (the type the underlying `source` store uses).
  */
-export class SerializerStore<In, Out> implements Store<In> {
+export class SerializerStore<In, Out> extends Store<In> {
     private readonly source: Store<Out>;
     private readonly onWrite: (data: In) => Out;
     private readonly onRead: (data: Out) => In;
@@ -271,7 +283,7 @@ export class SerializerStore<In, Out> implements Store<In> {
  * A CachingStore combinator, based on Figure 18.
  * It combines a source store and a cache store.
  */
-export class CachingStore<T> implements Store<T> {
+export class CachingStore<T> extends Store<T> {
     private readonly source: Store<T>;
     private readonly cache: Store<T>;
 
@@ -337,7 +349,7 @@ export class CachingStore<T> implements Store<T> {
  * publish/subscribe (pub/sub) system, a pattern used to keep different
  * parts of an application synchronized.
  */
-export class LoggingStore<T> implements Store<T> {
+export class LoggingStore<T> extends Store<T> {
     private readonly source: Store<T>;
     private readonly logStore: Store<string>;
 
