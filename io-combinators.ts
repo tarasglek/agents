@@ -68,3 +68,11 @@ export async function replayJSONL<T>(
         await fileHandle.close();
     }
 }
+
+export class JSONAppender<T> extends Store<T> {
+    constructor(public filename: string) {
+    }
+    async put(_ref: string, data: T): Promise<void> {
+        //open  filename and append JSON.stringify(data) \n to it and close it
+    }
+}
