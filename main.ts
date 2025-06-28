@@ -46,7 +46,15 @@ const triageAgent = new Agent({
 const programData = new DictStore<string | AgentInputItem>;
 
 async function replayJSONL<T>(src: string, dest: Store<T>): Promise<void> {
-  const content = await fs.readFile(src, 'utf-8');
+  let content: string;
+  try {
+    content = await fs.readFile(src, 'utf-8');
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return;
+    }
+    throw error;
+  }
   const lines = content.split('\n');
   for (const line of lines) {
     if (line.trim() === '') continue;
