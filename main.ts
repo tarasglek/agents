@@ -9,7 +9,7 @@ import {
 
 import { setOpenAIAPI } from '@openai/agents';
 import { DictStore, Store } from "./storage-combinators.ts";
-import { open } from "node:fs";
+import { promises as fs } from 'node:fs';
 
 setOpenAIAPI('chat_completions');
 
@@ -47,12 +47,30 @@ const chatHistory = new DictStore<string>();
 
 const configDir = "."
 
-function replayJSONL<T>(src: string, dest: Store<T>) {
-  for each line in open(src) {
-    const { key, operation, value } = line
-    if(operation === "delete") {
-    dest.delete(key);
-  } ....
+async function replayJSONL<T>(src: string, dest: Store<T>): Promise<void> {
+  const content = await fs.readFile(src, 'utf-8');
+  const lines = content.split('\n');
+  for (const line of lines) {
+    if (line.trim() === '') continue;
+    try {
+      const { key, operation, value } = JSON.parse(line);
+      switch (operation) {
+        case 'put':
+          await dest.put(key, value);
+          break;
+        case 'merge':
+          await dest.merge(key, value);
+          break;
+        case 'delete':
+          await dest.delete(key);
+          break;
+        default:
+          console.warn(`Unknown operation in replay log: ${operation}`);
+      }
+    } catch (e) {
+      console.error(`Failed to parse or process line: "${line}"`, e);
+    }
+  }
 }
 
 async function main() {
