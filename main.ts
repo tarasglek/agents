@@ -2,16 +2,16 @@ import { Agent, AgentInputItem, AgentsError, run } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
+import { replayJSONL } from "./io-combinators.ts";
 import {
   fetchProxyCurlLogger,
   prettyJsonLogger,
 } from "@tarasglek/fetch-proxy-curl-logger";
 
-import { setOpenAIAPI } from '@openai/agents';
-import { DictStore, Store, Operation } from "./storage-combinators.ts";
-import { promises as fs } from 'node:fs';
+import { setOpenAIAPI } from "@openai/agents";
+import { DictStore, Operation, Store } from "./storage-combinators.ts";
 
-setOpenAIAPI('chat_completions');
+setOpenAIAPI("chat_completions");
 
 const fetchWithPrettyJson = fetchProxyCurlLogger({
   logger: prettyJsonLogger,
@@ -43,49 +43,19 @@ const triageAgent = new Agent({
   handoffs: [historyTutorAgent, mathTutorAgent],
 });
 
-const programData = new DictStore<string | AgentInputItem>;
+const programData = new DictStore<string | AgentInputItem>();
 
-async function replayJSONL<T>(src: string, dest: Store<T>): Promise<void> {
-  let content: string;
-  try {
-    content = await fs.readFile(src, 'utf-8');
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      return;
-    }
-    throw error;
-  }
-  const lines = content.split('\n');
-  for (const line of lines) {
-    if (line.trim() === '') continue;
-    try {
-      const { key, operation, value }: { key: string; operation: Operation; value: T; } = JSON.parse(line);
-      switch (operation) {
-        case 'put':
-          await dest.put(key, value);
-          break;
-        case 'delete':
-          await dest.delete(key);
-          break;
-        default:
-          console.warn(`Unknown operation in replay log: ${operation}`);
-      }
-    } catch (e) {
-      console.error(`Failed to parse or process line: "${line}"`, e);
-    }
-  }
-}
+const HISTORY_JSONL = "history.jsonl";
 
-const HISTORY_JSONL = "history.jsonl"
 async function main() {
-  const programData = new DictStore<string | AgentInputItem>;
+  const programData = new DictStore<string | AgentInputItem>();
   await replayJSONL(HISTORY_JSONL, programData);
   const customClient = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: Deno.env.get(
       "OPENROUTER_API_KEY",
     ),
-    fetch: fetchWithPrettyJson as any
+    fetch: fetchWithPrettyJson as any,
   });
   setDefaultOpenAIClient(customClient as any);
   const stream = await run(triageAgent, "What is the capital of France?", {
@@ -98,9 +68,9 @@ async function main() {
     if (event) {
       let text: string = "";
       try {
-        text = stringify(event)
+        text = stringify(event);
       } catch (_e) {
-        text = JSON.stringify(event)
+        text = JSON.stringify(event);
       }
       console.log(text);
     }
@@ -117,8 +87,8 @@ async function main() {
 main().catch((err) => {
   if (err instanceof AgentsError && err.state) {
     console.log(err.state);
-    console.error(JSON.stringify(err.state))
+    console.error(JSON.stringify(err.state));
   } else {
-    console.error(err)
+    console.error(err);
   }
 });

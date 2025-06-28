@@ -199,7 +199,7 @@ export class DiskStore extends Store<string> {
  * This acts as a sink for logging operations.
  */
 export class ConsoleStore extends Store<string> {
-  async put(ref: string, data: string): Promise<void> {
+  async put(_ref: string, data: string): Promise<void> {
     // Use process.stdout.write for raw output without a newline.
     await process.stdout.write(data);
   }
