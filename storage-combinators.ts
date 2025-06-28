@@ -205,6 +205,8 @@ export class ConsoleStore extends Store<string> {
   }
 }
 
+const defaultjoined = (a: string, b: string) => `${a}/${b}`;
+
 /**
  * A RelativeStore combinator, based on Figure 15.
  * It maps references by prepending a prefix.
@@ -217,7 +219,7 @@ export class RelativeStore<T> extends Store<T> {
   constructor(
     source: Store<T>,
     prefix: string,
-    joiner: (a: string, b: string) => string,
+    joiner: (a: string, b: string) => string = defaultjoined,
   ) {
     super();
     this.source = source;
@@ -425,7 +427,6 @@ async function main() {
   const relativeHttpSource = new RelativeStore(
     httpSource,
     "https://jsonplaceholder.typicode.com",
-    (prefix, ref) => `${prefix}/${ref}`, // URL joiner
   );
   const loggedHttpSourceWithMetadata = new LoggingStore(
     relativeHttpSource,
