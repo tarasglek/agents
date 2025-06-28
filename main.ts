@@ -53,13 +53,10 @@ async function replayJSONL<T>(src: string, dest: Store<T>): Promise<void> {
   for (const line of lines) {
     if (line.trim() === '') continue;
     try {
-      const { key, operation, value }: { key: string; operation: Operation | 'merge'; value: T; } = JSON.parse(line);
+      const { key, operation, value }: { key: string; operation: Operation; value: T; } = JSON.parse(line);
       switch (operation) {
         case 'put':
           await dest.put(key, value);
-          break;
-        case 'merge':
-          await dest.merge(key, value);
           break;
         case 'delete':
           await dest.delete(key);
