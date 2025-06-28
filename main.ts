@@ -8,7 +8,7 @@ import {
 } from "@tarasglek/fetch-proxy-curl-logger";
 
 import { setOpenAIAPI } from '@openai/agents';
-import { DictStore, Store } from "./storage-combinators.ts";
+import { DictStore, Store, Operation } from "./storage-combinators.ts";
 import { promises as fs } from 'node:fs';
 
 setOpenAIAPI('chat_completions');
@@ -53,7 +53,7 @@ async function replayJSONL<T>(src: string, dest: Store<T>): Promise<void> {
   for (const line of lines) {
     if (line.trim() === '') continue;
     try {
-      const { key, operation, value } = JSON.parse(line);
+      const { key, operation, value }: { key: string; operation: Operation | 'merge'; value: T; } = JSON.parse(line);
       switch (operation) {
         case 'put':
           await dest.put(key, value);
