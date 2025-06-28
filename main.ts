@@ -1,4 +1,4 @@
-import { Agent, AgentsError, run } from "@openai/agents";
+import { Agent, AgentInputItem, AgentsError, run } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
@@ -43,9 +43,7 @@ const triageAgent = new Agent({
   handoffs: [historyTutorAgent, mathTutorAgent],
 });
 
-const chatHistory = new DictStore<string>();
-
-const configDir = "."
+const programData = new DictStore<string | AgentInputItem>;
 
 async function replayJSONL<T>(src: string, dest: Store<T>): Promise<void> {
   const content = await fs.readFile(src, 'utf-8');
@@ -70,7 +68,10 @@ async function replayJSONL<T>(src: string, dest: Store<T>): Promise<void> {
   }
 }
 
+const HISTORY_JSONL = "history.jsonl"
 async function main() {
+  const programData = new DictStore<string | AgentInputItem>;
+  await replayJSONL(HISTORY_JSONL, programData);
   const customClient = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: Deno.env.get(
