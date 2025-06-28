@@ -4,6 +4,8 @@
   },
   "imports": {
     "@openai/agents": "npm:@openai/agents@^0.0.10",
-    "@std/assert": "jsr:@std/assert@1"
+    "@std/assert": "jsr:@std/assert@1",
+    "@tarasglek/fetch-proxy-curl-logger": "jsr:@tarasglek/fetch-proxy-curl-logger@^0.0.9",
+    "openai": "npm:openai@5.8.2"
   }
 }

@@ -1,7 +1,23 @@
-import { Agent, run } from "@openai/agents";
+import { Agent, AgentsError, run } from "@openai/agents";
+import { stringify } from "jsr:@std/yaml";
+import { OpenAI } from "openai";
+import { setDefaultOpenAIClient } from "@openai/agents";
+import { error } from "node:console";
+import {
+  fetchProxyCurlLogger,
+  prettyJsonLogger,
+} from "@tarasglek/fetch-proxy-curl-logger";
+
+import { setOpenAIAPI } from '@openai/agents';
+
+setOpenAIAPI('chat_completions');
+
+const fetchWithPrettyJson = fetchProxyCurlLogger({
+  logger: prettyJsonLogger,
+});
 
 const params = {
-  model: "gpt-4.1-nano",
+  model: "openai/gpt-4.1-mini",
 };
 
 const historyTutorAgent = new Agent({
@@ -27,10 +43,42 @@ const triageAgent = new Agent({
 });
 
 async function main() {
-  const result = await run(triageAgent, "What is the capital of France?", {
+  const customClient = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: Deno.env.get(
+      "OPENROUTER_API_KEY",
+    ),
+    fetch: fetchWithPrettyJson as any
+  });
+  setDefaultOpenAIClient(customClient as any);
+  const stream = await run(triageAgent, "What is the capital of France?", {
     stream: true,
   });
-  console.log(result.finalOutput);
+  // const textStream = stream.toTextStream({ compatibleWithNodeStreams: true });
+  // textStream.pipe(process.stdout);
+  for await (const event of stream) {
+    // these are the raw events from the model
+    if (event) {
+      let text: string = "";
+      try {
+        text = stringify(event)
+      } catch (_e) {
+        text = JSON.stringify(event)
+      }
+      console.log(text);
+    }
+  }
+  await stream.completed;
+  // console.log(stream.finalOutput);
+  // console.log(stringify(stream.rawResponses));
+  // console.log(stringify(stream.state))
 }
 
-main().catch((err) => console.error(err));
+main().catch((err) => {
+  if (err instanceof AgentsError && err.state) {
+    console.log(err.state);
+    console.error(JSON.stringify(err.state))
+  } else {
+    console.error(err)
+  }
+});
