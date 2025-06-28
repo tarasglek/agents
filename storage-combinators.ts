@@ -125,6 +125,7 @@ export class HeadersStore extends Store<string> {
   private readonly headers: Headers;
 
   constructor(headers: Headers) {
+    super();
     this.headers = headers;
   }
 
@@ -218,6 +219,7 @@ export class RelativeStore<T> extends Store<T> {
     prefix: string,
     joiner: (a: string, b: string) => string,
   ) {
+    super();
     this.source = source;
     this.prefix = prefix;
     this.joiner = joiner;
@@ -259,6 +261,7 @@ export class SerializerStore<In, Out> extends Store<In> {
     onWrite: (data: In) => Out,
     onRead: (data: Out) => In,
   ) {
+    super();
     this.source = source;
     this.onWrite = onWrite;
     this.onRead = onRead;
@@ -297,6 +300,7 @@ export class CachingStore<T> extends Store<T> {
   private readonly cache: Store<T>;
 
   constructor(source: Store<T>, cache: Store<T>) {
+    super();
     this.source = source;
     this.cache = cache;
   }
@@ -363,6 +367,7 @@ export class LoggingStore<T> extends Store<T> {
   private readonly logStore: Store<string>;
 
   constructor(source: Store<T>, logStore: Store<string>) {
+    super();
     this.source = source;
     this.logStore = logStore;
   }
