@@ -2,14 +2,14 @@ import { Agent, AgentInputItem, AgentsError, run } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
-import { replayJSONL } from "./io-combinators.ts";
+import { JSONAppender, replayJSONL } from "./io-combinators.ts";
 import {
   fetchProxyCurlLogger,
   prettyJsonLogger,
 } from "@tarasglek/fetch-proxy-curl-logger";
 
 import { setOpenAIAPI } from "@openai/agents";
-import { DictStore, Operation, Store } from "./storage-combinators.ts";
+import { DictStore, LoggingStore, Operation, RelativeStore, Store } from "./storage-combinators.ts";
 
 setOpenAIAPI("chat_completions");
 
@@ -46,10 +46,52 @@ const triageAgent = new Agent({
 const programData = new DictStore<string | AgentInputItem>();
 
 const HISTORY_JSONL = "history.jsonl";
+interface Message {
+  prevID?: string
+  item: AgentInputItem
+}
+
+interface Chat {
+  id: string
+  msgID?: string
+}
 
 async function main() {
-  const programData = new DictStore<string | AgentInputItem>();
+  const memoryStore = new DictStore<Chat | Message>();
   await replayJSONL(HISTORY_JSONL, programData);
+  const diskStore = new LoggingStore(memoryStore, new JSONAppender(HISTORY_JSONL));
+  const chats = new RelativeStore<Chat>(diskStore as any, "chats");
+  let currentChat = await (async function () {
+    const dbEntry = await chats.get("current");
+    if (dbEntry) {
+      return dbEntry;
+    }
+    const newEntry = { id: `${Date.now()}` } as Chat;
+    await chats.put("current", newEntry);
+    return newEntry;
+  })();
+  const allMessages = new RelativeStore<Message>(diskStore as any, "messages");
+  const chatMessages = new RelativeStore<Message>(allMessages, currentChat.id);
+
+  const msgHistory: AgentInputItem[] = []
+  const prevMsgID = currentChat.msgID;
+  while (prevMsgID) {
+    const msg = await chatMessages.get(prevMsgID)
+    prepend msg to msgHistory
+    prevMsgID = msg?.prevID;
+  }
+  const userInput = prompt(">");
+  if (!userInput) {
+    process.exit(0);
+  }
+  const msgID = `${Date.now()}`;
+  const msg = { type: "message", role: "user", content: userInput.trim() } as AgentInputItem
+  await chatMessages.put(msgID, { prevID: currentChat.msgID, item: msg });
+  msgHistory.push(msg);
+  currentChat = { ...currentChat, msgID };
+  await chats.put("current", currentChat);
+
+  process.exit(0);
   const customClient = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: Deno.env.get(
@@ -58,7 +100,7 @@ async function main() {
     fetch: fetchWithPrettyJson as any,
   });
   setDefaultOpenAIClient(customClient as any);
-  const stream = await run(triageAgent, "What is the capital of France?", {
+  const stream = await run(triageAgent, msgHistory, {
     stream: true,
   });
   // const textStream = stream.toTextStream({ compatibleWithNodeStreams: true });
