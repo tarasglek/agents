@@ -116,15 +116,28 @@ class Chats {
     }
     await this.chats.put("current", this.currentChat);
   }
+
+  async deleteLastMessage(): Promise<void> {
+    if (!this.currentChat.msgID) {
+      console.log("No message to delete.");
+      return;
+    }
+    const lastMsg = await this.messages.get(this.currentChat.msgID);
+    this.currentChat.msgID = lastMsg?.prevID;
+    await this.chats.put("current", this.currentChat);
+    console.log("Deleted last message. New history:");
+    console.log(stringify(await this.history()));
+  }
 }
 
-function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[]): Agent {
+async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], chats: Chats): Promise<Agent> {
   const [command, ...args] = userInput.slice(1).split(" ");
   if (command === "help") {
     console.log("Available commands:");
     console.log("/help - Show this help message");
     console.log("/agent - List available agents");
     console.log("/agent <number> - Select an agent");
+    console.log("/del-last-msg - Delete the last message");
   } else if (command === "agent") {
     if (args.length === 0) {
       console.log("Available agents:");
@@ -143,6 +156,8 @@ function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[]):
         console.log("Invalid agent number.");
       }
     }
+  } else if (command === "del-last-msg") {
+    await chats.deleteLastMessage();
   } else {
     console.log(`Unknown command: ${command}`);
   }
@@ -161,7 +176,7 @@ async function main() {
     }
 
     if (userInput.startsWith("/")) {
-      currentAgent = handleCommand(userInput, currentAgent, agents);
+      currentAgent = await handleCommand(userInput, currentAgent, agents, chats);
       continue;
     }
 
