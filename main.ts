@@ -202,6 +202,10 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
   return currentAgent;
 }
 
+function printPrompt(agent: Agent) {
+  process.stdout.write(agent.name + "> ");
+}
+
 
 async function main() {
   const chats = await Chats.init("history.jsonl");
@@ -210,7 +214,7 @@ async function main() {
 
   const rl = readline.createInterface({ input: stdin, output: stdout });
 
-  process.stdout.write(currentAgent.name + "> ");
+  printPrompt(currentAgent);
   for await (const userInput of rl) {
     if (userInput.startsWith("/")) {
       currentAgent = await handleCommand(userInput, currentAgent, agents, chats);
@@ -248,7 +252,7 @@ async function main() {
         console.log(stringify(newMessages));
       }
     }
-    process.stdout.write(currentAgent.name + "> ");
+    printPrompt(currentAgent);
   }
   rl.close();
 }
