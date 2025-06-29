@@ -150,6 +150,7 @@ async function main() {
       })
       .pipe(process.stdout);
     await stream.completed
+    console.log("");// add a newline before reprinting stuff
     const newMessages = stream.history.slice(msgsBeforeAI.length);
     if (newMessages.length) {
       chats.append(newMessages);
