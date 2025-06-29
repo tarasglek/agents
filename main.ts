@@ -152,6 +152,7 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
     console.log("/agent - List available agents");
     console.log("/agent <number> - Select an agent");
     console.log("/del-last-msg - Delete the last message");
+    console.log("/clear - Start a new chat");
   } else if (command === "agent") {
     if (args.length === 0) {
       console.log("Available agents:");
@@ -180,6 +181,9 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
     } else {
       console.log("No message to delete.");
     }
+  } else if (command === "clear") {
+    chats.newChat();
+    console.log("New chat started.");
   } else {
     console.log(`Unknown command: ${command}`);
   }
