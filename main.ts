@@ -2,7 +2,7 @@ import { Agent, AgentInputItem, AgentsError, run } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
-import { JSONAppender, replayJSONL } from "./io-combinators.ts";
+import { JSONAppender, JSONLAppender, replayJSONL } from "./io-combinators.ts";
 import {
   fetchProxyCurlLogger,
   prettyJsonLogger,
@@ -59,7 +59,7 @@ interface Chat {
 async function main() {
   const memoryStore = new DictStore<Chat | Message>();
   await replayJSONL(HISTORY_JSONL, programData);
-  const diskStore = new LoggingStore(memoryStore, new JSONAppender(HISTORY_JSONL));
+  const diskStore = new JSONLAppender(HISTORY_JSONL, memoryStore);
   const chats = new RelativeStore<Chat>(diskStore as any, "chats");
   let currentChat = await (async function () {
     const dbEntry = await chats.get("current");
