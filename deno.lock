@@ -3,9 +3,12 @@
   "specifiers": {
     "jsr:@std/assert@1": "1.0.13",
     "jsr:@std/internal@^1.0.6": "1.0.6",
+    "jsr:@std/json@0.224.0": "0.224.0",
+    "jsr:@std/streams@0.224.0": "0.224.0",
     "jsr:@std/yaml@*": "1.0.5",
     "jsr:@tarasglek/fetch-proxy-curl-logger@^0.0.9": "0.0.9",
     "npm:@openai/agents@^0.0.10": "0.0.10",
+    "npm:@types/node@*": "22.12.0",
     "npm:openai@5.8.2": "5.8.2_ws@8.18.2_zod@3.25.67",
     "npm:openai@^5.8.2": "5.8.2_ws@8.18.2_zod@3.25.67"
   },
@@ -18,6 +21,12 @@
     },
     "@std/internal@1.0.6": {
       "integrity": "9533b128f230f73bd209408bb07a4b12f8d4255ab2a4d22a1fd6d87304aca9a4"
+    },
+    "@std/json@0.224.0": {
+      "integrity": "b7d38d8a8729f9a4074d04a626084825a498db0d385cbc41ad29bce9f8ca01dc"
+    },
+    "@std/streams@0.224.0": {
+      "integrity": "9c21feb45113abfc67dd536029624d1792d56dfbb029b8c1baf4ad5a2c35769e"
     },
     "@std/yaml@1.0.5": {
       "integrity": "71ba3d334305ee2149391931508b2c293a8490f94a337eef3a09cade1a2a2742"

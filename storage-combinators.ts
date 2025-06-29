@@ -205,7 +205,7 @@ export class ConsoleStore extends Store<string> {
   }
 }
 
-const defaultjoined = (a: string, b: string) => `${a}/${b}`;
+const fwdSlashJoiner = (a: string, b: string) => `${a}/${b}`;
 
 /**
  * A RelativeStore combinator, based on Figure 15.
@@ -219,7 +219,7 @@ export class RelativeStore<T> extends Store<T> {
   constructor(
     source: Store<T>,
     prefix: string,
-    joiner: (a: string, b: string) => string = defaultjoined,
+    joiner: (a: string, b: string) => string = fwdSlashJoiner,
   ) {
     super();
     this.source = source;
