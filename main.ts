@@ -230,14 +230,14 @@ async function main() {
     } as AgentInputItem;
     process.stdout.write(stringify(msg));
     await chats.append([msg]);
-    const customClient = new OpenAI(...(USE_OPENROUTER ? {
+    const customClient = new OpenAI(USE_OPENROUTER ? {
 
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: Deno.env.get(
         "OPENROUTER_API_KEY",
       ),
       //  fetch: false ? fetchWithPrettyJson as any : fetch,
-    } : {}));
+    } : {});
     setDefaultOpenAIClient(customClient as any);
     const msgsBeforeAI = await chats.history();
     const stream = await run(currentAgent, msgsBeforeAI, {
