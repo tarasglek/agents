@@ -1,6 +1,4 @@
 // deno-lint-ignore-file no-process-global
-import * as readline from "node:readline";
-import { stdin, stdout } from "node:process";
 import { Agent, AgentInputItem, MCPServerStdio, run, webSearchTool } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { parseArgs } from "jsr:@std/cli/parse-args";
@@ -215,7 +213,7 @@ class Chats {
 /**
  * THis is written stupidly cos ai wrote it to serve as a demo of switching agents and deleting messages
  */
-async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], chats: Chats, rl: readline.Interface): Promise<Agent> {
+async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], chats: Chats): Promise<Agent> {
   const [command, ...args] = userInput.slice(1).split(" ");
   if (command === "help") {
     console.log("Available commands:");
@@ -257,16 +255,16 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
     const id = chats.newChat();
     console.log(`New chat (id:${id}) started.`);
   } else if (command === "quit") {
-    rl.close();
+    Deno.exit(0);
   } else {
     console.log(`Unknown command: ${command}`);
   }
   return currentAgent;
 }
 
-function printPrompt(agent: Agent) {
+function getPrompt(agent: Agent): string {
   const serviceName = USE_OPENROUTER ? "openrouter" : "openai";
-  process.stdout.write(`(${serviceName}) ${agent.name}> `);
+  return `(${serviceName}) ${agent.name}> `;
 }
 
 
@@ -275,12 +273,13 @@ async function main() {
   let currentAgent = agents.at(-1)!;
   console.log(stringifyYaml(await chats.history()));
 
-  const rl = readline.createInterface({ input: stdin, output: stdout });
-
-  printPrompt(currentAgent);
-  for await (const userInput of rl) {
+  while (true) {
+    const userInput = prompt(getPrompt(currentAgent));
+    if (userInput === null) { // EOF
+      break;
+    }
     if (userInput.startsWith("/")) {
-      currentAgent = await handleCommand(userInput, currentAgent, agents, chats, rl);
+      currentAgent = await handleCommand(userInput, currentAgent, agents, chats);
     } else if (userInput) {
       const msg = {
         type: "message",
@@ -318,9 +317,7 @@ async function main() {
         console.log(stringifyYaml(newMessages));
       }
     }
-    printPrompt(currentAgent);
   }
-  rl.close();
 }
 
 main().catch((err) => {
