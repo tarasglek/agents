@@ -84,7 +84,7 @@ async function main() {
   if (!userInput) {
     process.exit(0);
   }
-  const msgID = `${Date.now()}`;
+  const msgID = `${Date.now() - parseInt(currentChat.id)}`;
   const msg = { type: "message", role: "user", content: userInput.trim() } as AgentInputItem
   await chatMessages.put(msgID, { prevID: currentChat.msgID, item: msg });
   msgHistory.push(msg);
