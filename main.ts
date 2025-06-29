@@ -248,6 +248,9 @@ function printPrompt(agent: Agent) {
 async function main() {
   const server = new MCPServerStdio({
     fullCommand: "rs_filesystem --mcp",
+    env: {
+      "MCP_RS_FILESYSTEM_ALLOWED_DIRECTORIES": Deno.cwd(),
+    },
   });
   await server.connect();
 
