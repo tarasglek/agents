@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "jsr:@std/assert@1": "1.0.13",
+    "jsr:@std/cli@*": "1.0.17",
     "jsr:@std/internal@^1.0.6": "1.0.6",
     "jsr:@std/json@0.224.0": "0.224.0",
     "jsr:@std/streams@0.224.0": "0.224.0",
@@ -18,6 +19,9 @@
       "dependencies": [
         "jsr:@std/internal"
       ]
+    },
+    "@std/cli@1.0.17": {
+      "integrity": "e15b9abe629e17be90cc6216327f03a29eae613365f1353837fa749aad29ce7b"
     },
     "@std/internal@1.0.6": {
       "integrity": "9533b128f230f73bd209408bb07a4b12f8d4255ab2a4d22a1fd6d87304aca9a4"

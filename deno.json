@@ -1,7 +1,8 @@
 {
   "tasks": {
     "dev": "deno run --watch main.ts",
-    "main": "deno run --allow-all main.ts"
+    "main": "deno run --allow-all main.ts",
+    "rlwrap": "rlwrap -a --history-filename=history.cmds deno run --allow-all main.ts"
   },
   "compilerOptions": {
     "noImplicitOverride": false
