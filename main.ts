@@ -11,6 +11,7 @@ import {
 
 import { setOpenAIAPI } from "@openai/agents";
 import { DictStore, LoggingStore, Operation, RelativeStore, Store } from "./storage-combinators.ts";
+import { inherits } from "node:util";
 
 setOpenAIAPI("chat_completions");
 
@@ -44,7 +45,6 @@ const triageAgent = new Agent({
   handoffs: [historyTutorAgent, mathTutorAgent],
 });
 
-const HISTORY_JSONL = "history.jsonl";
 interface Message {
   prevID?: string
   item: AgentInputItem
@@ -55,46 +55,82 @@ interface Chat {
   msgID?: string
 }
 
-async function main() {
-  const memoryStore = new DictStore<Chat | Message>();
-  await replayJSONL(HISTORY_JSONL, memoryStore);
-  const diskStore = new JSONLAppender(HISTORY_JSONL, memoryStore);
-  const chats = new RelativeStore<Chat>(diskStore as any, "chats");
-  let currentChat = await (async function () {
-    const dbEntry = await chats.get("current");
-    if (dbEntry) {
-      return dbEntry;
-    }
-    const newEntry = { id: `${Date.now()}` } as Chat;
-    await chats.put("current", newEntry);
-    return newEntry;
-  })();
-  const allMessages = new RelativeStore<Message>(diskStore as any, "messages");
-  const chatMessages = new RelativeStore<Message>(allMessages, currentChat.id);
-
-  const msgHistory: AgentInputItem[] = []
-  let prevMsgID = currentChat.msgID;
-  while (prevMsgID) {
-    const msg = await chatMessages.get(prevMsgID)
-    if (msg) {
-      msgHistory.unshift(msg.item);
-    }
-    prevMsgID = msg?.prevID;
+class Chats {
+  private constructor(private currentChat: Chat, private chats: Store<Chat>, private messages: RelativeStore<Message>) {
   }
-  console.log(stringify(msgHistory))
+
+  static async init(filename: string): Promise<Chats> {
+    const memoryStore = new DictStore<Chat | Message>();
+    await replayJSONL(filename, memoryStore);
+    const diskStore = new JSONLAppender(filename, memoryStore);
+    const chats = new RelativeStore<Chat>(diskStore as any, "chats");
+    const currentChat = await (async function () {
+      const dbEntry = await chats.get("current");
+      if (dbEntry) {
+        return dbEntry;
+      }
+      const newEntry = { id: `${Date.now()}` } as Chat;
+      await chats.put("current", newEntry);
+      return newEntry;
+    })();
+    const allMessages = new RelativeStore<Message>(diskStore as any, "messages");
+    const chatMessages = new RelativeStore<Message>(allMessages, currentChat.id);
+
+    const chat = new Chats(currentChat, chats, chatMessages);
+    return chat;
+  }
+
+  async history(): Promise<AgentInputItem[]> {
+    const msgHistory: AgentInputItem[] = []
+    let prevMsgID = this.currentChat.msgID;
+    while (prevMsgID) {
+      const msg = await this.messages.get(prevMsgID)
+      if (msg) {
+        msgHistory.unshift(msg.item);
+      }
+      prevMsgID = msg?.prevID;
+    }
+    return msgHistory;
+  }
+
+  /**
+   * @returns unique-within-chat msgIDs based on time
+   */
+  async genMsgId(): Promise<string> {
+    // trim ids relative to convo id
+    const baseID = `${Date.now() - parseInt(this.currentChat.id)}`;
+    let msgID = baseID;
+    let i = 0;
+    // check if we unique
+    while (await this.messages.get(msgID)) {
+      msgID = `${baseID}${i++}`;
+    }
+    return msgID;
+  }
+
+  async append(msgs: AgentInputItem[]): Promise<void> {
+    for (const msg of msgs) {
+      const msgID = await this.genMsgId()
+      await this.messages.put(msgID, { prevID: this.currentChat.msgID, item: msg });
+      this.currentChat.msgID = msgID
+    }
+  }
+}
+
+
+async function main() {
+  const chats = await Chats.init("history.jsonl");
+
+  console.log(stringify(await chats.history()))
   while (true) {
     const userInput = prompt(">");
     if (!userInput) {
       process.exit(0);
     }
 
-    const msgID = `${Date.now() - parseInt(currentChat.id)}`;
     const msg = { type: "message", role: "user", content: userInput.trim() } as AgentInputItem
     process.stdout.write(stringify(msg));
-    await chatMessages.put(msgID, { prevID: currentChat.msgID, item: msg });
-    msgHistory.push(msg);
-    currentChat = { ...currentChat, msgID };
-    await chats.put("current", currentChat);
+    await chats.append([msg]);
 
     const customClient = new OpenAI({
       baseURL: "https://openrouter.ai/api/v1",
@@ -104,8 +140,8 @@ async function main() {
       fetch: fetchWithPrettyJson as any,
     });
     setDefaultOpenAIClient(customClient as any);
-    console.log("\sassistant:\n");
-    const stream = await run(triageAgent, msgHistory, {
+    const msgsBeforeAI = await chats.history();
+    const stream = await run(triageAgent, msgsBeforeAI, {
       stream: true,
     });
     stream
@@ -114,30 +150,14 @@ async function main() {
       })
       .pipe(process.stdout);
     await stream.completed
-    const newMsgHistory = stream.history;
-    const newMessages = newMsgHistory.slice(msgHistory.length);
-    let i = 0;
-    for (const msg of newMessages) {
-      const baseID = `${Date.now() - parseInt(currentChat.id)}`;
-      let msgID = baseID;
-      while (await chatMessages.get(msgID)) {
-        msgID = `${baseID}${i++}`;
-      }
-      await chatMessages.put(msgID, { prevID: currentChat.msgID, item: msg });
-      currentChat.msgID = msgID
-    }
+    const newMessages = stream.history.slice(msgsBeforeAI.length);
     if (newMessages.length) {
-      await chats.put("current", currentChat);
+      chats.append(newMessages);
       console.log(stringify(newMessages))
     }
   }
 }
 
 main().catch((err) => {
-  if (err instanceof AgentsError && err.state) {
-    console.log(err.state);
-    console.error(JSON.stringify(err.state));
-  } else {
-    console.error(err);
-  }
+  console.error(err);
 });
