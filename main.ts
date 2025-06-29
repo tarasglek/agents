@@ -203,7 +203,8 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
 }
 
 function printPrompt(agent: Agent) {
-  process.stdout.write(agent.name + "> ");
+  const serviceName = USE_OPENROUTER ? "openrouter" : "openai";
+  process.stdout.write(`(${serviceName}) ${agent.name}> `);
 }
 
 
