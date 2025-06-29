@@ -43,8 +43,6 @@ const triageAgent = new Agent({
   handoffs: [historyTutorAgent, mathTutorAgent],
 });
 
-const programData = new DictStore<string | AgentInputItem>();
-
 const HISTORY_JSONL = "history.jsonl";
 interface Message {
   prevID?: string
@@ -58,7 +56,7 @@ interface Chat {
 
 async function main() {
   const memoryStore = new DictStore<Chat | Message>();
-  await replayJSONL(HISTORY_JSONL, programData);
+  await replayJSONL(HISTORY_JSONL, memoryStore);
   const diskStore = new JSONLAppender(HISTORY_JSONL, memoryStore);
   const chats = new RelativeStore<Chat>(diskStore as any, "chats");
   let currentChat = await (async function () {
