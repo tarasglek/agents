@@ -26,14 +26,14 @@ const historyTutorAgent = new Agent({
   ...params,
   name: "History Tutor",
   instructions:
-    "You provide assistance with historical queries. Explain important events and context clearly.",
+    "You provide assistance with historical queries. Explain important events and context clearly. Refuse to help with non-history question",
 });
 
 const mathTutorAgent = new Agent({
   ...params,
   name: "Math Tutor",
   instructions:
-    "You provide help with math problems. Explain your reasoning at each step and include examples",
+    "You provide help with math problems. Explain your reasoning at each step and include examples. Refuse to help with non-math questions",
 });
 
 const triageAgent = new Agent({
@@ -43,6 +43,8 @@ const triageAgent = new Agent({
     "You determine which agent to use based on the user's homework question",
   handoffs: [historyTutorAgent, mathTutorAgent],
 });
+
+const agents = [historyTutorAgent, mathTutorAgent, triageAgent];
 
 interface Message {
   prevID?: string
@@ -119,7 +121,7 @@ class Chats {
 
 async function main() {
   const chats = await Chats.init("history.jsonl");
-
+  const currentAgent = agents.at(-1)!;
   console.log(stringify(await chats.history()))
   while (true) {
     const userInput = prompt(">");
@@ -140,7 +142,7 @@ async function main() {
     });
     setDefaultOpenAIClient(customClient as any);
     const msgsBeforeAI = await chats.history();
-    const stream = await run(triageAgent, msgsBeforeAI, {
+    const stream = await run(currentAgent, msgsBeforeAI, {
       stream: true,
     });
     stream
