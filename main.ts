@@ -36,13 +36,21 @@ const mathTutorAgent = new Agent({
     "You provide help with math problems. Explain your reasoning at each step and include examples. Refuse to help with non-math questions",
 });
 
+const search = new Agent({
+  model: "openai/gpt-4.1-mini:online",
+  name: "Search Agent",
+  instructions:
+    "You search web and explain results",
+});
+
 const triageAgent = new Agent({
   ...params,
   name: "Triage Agent",
   instructions:
-    "You determine which agent to use based on the user's homework question",
-  handoffs: [historyTutorAgent, mathTutorAgent],
+    "You determine which agent to use based on the user's question",
+  handoffs: [historyTutorAgent, mathTutorAgent, search],
 });
+
 
 const agents = [historyTutorAgent, mathTutorAgent, triageAgent];
 
@@ -78,6 +86,11 @@ class Chats {
 
     const chat = new Chats(currentChat, chats, chatMessages);
     return chat;
+  }
+
+  newChat() {
+    // note this will persist once messages are added
+    this.currentChat = { id: `${Date.now()}` }
   }
 
   async history(): Promise<AgentInputItem[]> {
