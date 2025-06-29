@@ -81,9 +81,7 @@ async function main() {
     }
     prevMsgID = msg?.prevID;
   }
-  msgHistory.forEach(msg => {
-    process.stdout.write(stringify(msg));
-  });
+  console.log(stringify(msgHistory))
   while (true) {
     const userInput = prompt(">");
     if (!userInput) {
@@ -117,17 +115,14 @@ async function main() {
       .pipe(process.stdout);
     await stream.completed
     const newMsgHistory = stream.history;
-    let lastMsgId = currentChat.msgID
     for (let i = msgHistory.length; i < newMsgHistory.length; i++) {
       const msg = newMsgHistory[i];
-      const msgID = `${Date.now() - parseInt(currentChat.id)}`;
-      await chatMessages.put(msgID, { prevID: lastMsgId, item: msg });
-      lastMsgId = msgID
+      const msgID = `${Date.now() - parseInt(currentChat.id)}${i}`;
+      await chatMessages.put(msgID, { prevID: currentChat.msgID, item: msg });
       process.stdout.write(stringify(msg));
+      currentChat.msgID = msgID
     }
-    if (lastMsgId && lastMsgId != currentChat.msgID) {
-      await chats.put("current", currentChat);
-    }
+    await chats.put("current", currentChat);
   }
 }
 
