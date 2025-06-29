@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-process-global
 import * as readline from "node:readline";
 import { stdin, stdout } from "node:process";
-import { Agent, AgentInputItem, run, webSearchTool } from "@openai/agents";
+import { Agent, AgentInputItem, MCPServerStdio, run, webSearchTool } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { OpenAI } from "openai";
@@ -246,6 +246,20 @@ function printPrompt(agent: Agent) {
 
 
 async function main() {
+  const server = new MCPServerStdio({
+    fullCommand: "rs_filesystem --mcp",
+  });
+  await server.connect();
+
+  const coderAgent = new Agent({
+    ...params,
+    name: "Coder Agent",
+    instructions:
+      "You are a terse coder. You can edit files. You carefully use git to version your changes.",
+    mcpServers: [server],
+  });
+  agents.push(coderAgent);
+
   const chats = await Chats.init("history.jsonl");
   let currentAgent = agents.at(-1)!;
   console.log(stringifyYaml(await chats.history()));
