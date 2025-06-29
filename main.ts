@@ -130,6 +130,9 @@ class Chats {
   }
 }
 
+/**
+ * THis is written stupidly cos ai wrote it to serve as a demo of switching agents and deleting messages
+ */
 async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], chats: Chats): Promise<Agent> {
   const [command, ...args] = userInput.slice(1).split(" ");
   if (command === "help") {
@@ -158,6 +161,9 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
     }
   } else if (command === "del-last-msg") {
     await chats.deleteLastMessage();
+    console.log("deleted");
+    console.log(stringify(await chats.history()))
+
   } else {
     console.log(`Unknown command: ${command}`);
   }
