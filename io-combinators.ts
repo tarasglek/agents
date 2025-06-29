@@ -1,5 +1,6 @@
 import { Store, Operation } from "./storage-combinators.ts";
-import { promises as fs } from "node:fs";
+import { TextLineStream } from "jsr:@std/streams@0.224.0/text-line-stream";
+import { JsonParseStream } from "jsr:@std/json@0.224.0/json-parse-stream";
 
 export async function replayJSONL<T>(
     src: string,
@@ -7,49 +8,28 @@ export async function replayJSONL<T>(
 ): Promise<void> {
     let fileHandle;
     try {
-        fileHandle = await fs.open(src, "r");
-    } catch (error: any) {
-        if (error.code === "ENOENT") {
+        fileHandle = await Deno.open(src, { read: true });
+    } catch (error) {
+        if (error instanceof Deno.errors.NotFound) {
             return; // File doesn't exist, exit gracefully.
         }
         throw error;
     }
 
-    // A transform stream that splits a stream of text into lines.
-    class LineSplitter extends TransformStream<string, string> {
-        private buffer = "";
-        constructor() {
-            super({
-                transform: (chunk, controller) => {
-                    this.buffer += chunk;
-                    const lines = this.buffer.split("\n");
-                    this.buffer = lines.pop()!; // The last part is either an incomplete line or an empty string.
-                    for (const line of lines) {
-                        controller.enqueue(line);
-                    }
-                },
-                flush: (controller) => {
-                    if (this.buffer) {
-                        controller.enqueue(this.buffer);
-                    }
-                },
-            });
-        }
-    }
-
-    const stream = fileHandle.readableWebStream()
-        .pipeThrough(new TextDecoderStream())
-        .pipeThrough(new LineSplitter());
+    const stream = fileHandle.readable
+        .pipeThrough(new TextDecoderStream()) // decode Uint8Array to string
+        .pipeThrough(new TextLineStream()) // split string line by line
+        .pipeThrough(new JsonParseStream()); // parse each chunk as JSON
 
     try {
         for await (const line of stream) {
-            if (line.trim() === "") continue;
+            if (!line || typeof line !== 'object') continue;
             try {
-                const { key, operation, value }: {
+                const { key, operation, value } = line as {
                     key: string;
                     operation: Operation;
                     value: T;
-                } = JSON.parse(line);
+                };
                 switch (operation) {
                     case "put":
                         await dest.put(key, value);
@@ -61,11 +41,11 @@ export async function replayJSONL<T>(
                         console.warn(`Unknown operation in replay log: ${operation}`);
                 }
             } catch (e) {
-                console.error(`Failed to parse or process line: "${line}"`, e);
+                console.error(`Failed to process line: "${JSON.stringify(line)}"`, e);
             }
         }
     } finally {
-        await fileHandle.close();
+        fileHandle.close();
     }
 }
 
@@ -77,13 +57,13 @@ export class JSONLAppender<T> extends Store<T> {
         await this.store.put(ref, data);
         const logEntry = { key: ref, operation: "put", value: data };
         const line = JSON.stringify(logEntry) + "\n";
-        await fs.appendFile(this.filename, line, "utf-8");
+        await Deno.writeTextFile(this.filename, line, { append: true });
     }
     async delete(ref: string): Promise<void> {
         await this.store.delete(ref);
         const logEntry = { key: ref, operation: "delete", value: null };
         const line = JSON.stringify(logEntry) + "\n";
-        await fs.appendFile(this.filename, line, "utf-8");
+        await Deno.writeTextFile(this.filename, line, { append: true });
     }
 
     async get(ref: string): Promise<T | null> {
