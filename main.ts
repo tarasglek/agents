@@ -3,6 +3,7 @@ import * as readline from "node:readline";
 import { stdin, stdout } from "node:process";
 import { Agent, AgentInputItem, run, webSearchTool } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
+import { parseArgs } from "jsr:@std/cli/parse-args";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
 import { JSONLAppender, replayJSONL } from "./io-combinators.ts";
@@ -15,9 +16,16 @@ import { setOpenAIAPI } from "@openai/agents";
 import { DictStore, RelativeStore, Store } from "./storage-combinators.ts";
 
 
-let openaiPrefix = '';
-const USE_OPENROUTER = false;
+const flags = parseArgs(Deno.args, {
+  string: ["provider"],
+  boolean: ["trace"],
+});
 
+const provider = flags.provider ?? "openai";
+const USE_OPENROUTER = provider === "openrouter";
+const USE_TRACE = flags.trace ?? false;
+
+let openaiPrefix = '';
 if (USE_OPENROUTER) {
   openaiPrefix = 'openai/';
   setOpenAIAPI("chat_completions");
@@ -227,14 +235,17 @@ async function main() {
       } as AgentInputItem;
       process.stdout.write(stringify(msg));
       await chats.append([msg]);
-      const customClient = new OpenAI(USE_OPENROUTER ? {
-
-        baseURL: "https://openrouter.ai/api/v1",
-        apiKey: Deno.env.get(
-          "OPENROUTER_API_KEY",
-        ),
-        //  fetch: false ? fetchWithPrettyJson as any : fetch,
-      } : {});
+      const customClient = new OpenAI({
+        ...(USE_OPENROUTER
+          ? {
+            baseURL: "https://openrouter.ai/api/v1",
+            apiKey: Deno.env.get(
+              "OPENROUTER_API_KEY",
+            ),
+          }
+          : {}),
+        fetch: USE_TRACE ? fetchWithPrettyJson as any : undefined,
+      });
       setDefaultOpenAIClient(customClient as any);
       const msgsBeforeAI = await chats.history();
       const stream = await run(currentAgent, msgsBeforeAI, {
