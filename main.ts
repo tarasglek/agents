@@ -212,50 +212,43 @@ async function main() {
 
   process.stdout.write(currentAgent.name + "> ");
   for await (const userInput of rl) {
-    if (!userInput) {
-      process.stdout.write(currentAgent.name + "> ");
-      continue;
-    }
-
     if (userInput.startsWith("/")) {
       currentAgent = await handleCommand(userInput, currentAgent, agents, chats);
-      process.stdout.write(currentAgent.name + "> ");
-      continue;
-    }
+    } else if (userInput) {
+      const msg = {
+        type: "message",
+        role: "user",
+        content: userInput.trim(),
+      } as AgentInputItem;
+      process.stdout.write(stringify(msg));
+      await chats.append([msg]);
+      const customClient = new OpenAI(USE_OPENROUTER ? {
 
-    const msg = {
-      type: "message",
-      role: "user",
-      content: userInput.trim(),
-    } as AgentInputItem;
-    process.stdout.write(stringify(msg));
-    await chats.append([msg]);
-    const customClient = new OpenAI(USE_OPENROUTER ? {
-
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: Deno.env.get(
-        "OPENROUTER_API_KEY",
-      ),
-      //  fetch: false ? fetchWithPrettyJson as any : fetch,
-    } : {});
-    setDefaultOpenAIClient(customClient as any);
-    const msgsBeforeAI = await chats.history();
-    const stream = await run(currentAgent, msgsBeforeAI, {
-      stream: true,
-    });
-    stream
-      .toTextStream({
-        compatibleWithNodeStreams: true,
-      })
-      .pipe(process.stdout);
-    await stream.completed;
-    console.log(""); // add a newline before reprinting stuff
-    const newMessages = stream.history.slice(msgsBeforeAI.length);
-    if (newMessages.length) {
-      await chats.append(newMessages);
-      console.log(stringify(newMessages));
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: Deno.env.get(
+          "OPENROUTER_API_KEY",
+        ),
+        //  fetch: false ? fetchWithPrettyJson as any : fetch,
+      } : {});
+      setDefaultOpenAIClient(customClient as any);
+      const msgsBeforeAI = await chats.history();
+      const stream = await run(currentAgent, msgsBeforeAI, {
+        stream: true,
+      });
+      stream
+        .toTextStream({
+          compatibleWithNodeStreams: true,
+        })
+        .pipe(process.stdout);
+      await stream.completed;
+      console.log(""); // add a newline before reprinting stuff
+      const newMessages = stream.history.slice(msgsBeforeAI.length);
+      if (newMessages.length) {
+        await chats.append(newMessages);
+        console.log(stringify(newMessages));
+      }
     }
-    process.stdout.write(currentAgent.name + ">");
+    process.stdout.write(currentAgent.name + "> ");
   }
   rl.close();
 }
