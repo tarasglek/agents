@@ -16,6 +16,10 @@ import { setOpenAIAPI } from "@openai/agents";
 import { DictStore, RelativeStore, Store } from "./storage-combinators.ts";
 
 
+function stringifyYaml(obj: unknown): string {
+  return stringify(obj, { skipInvalid: true });
+}
+
 const flags = parseArgs(Deno.args, {
   string: ["provider"],
   boolean: ["trace"],
@@ -195,9 +199,9 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
     const deletedMsg = await chats.deleteLastMessage();
     if (deletedMsg) {
       console.log("Deleted last message:");
-      console.log(stringify(deletedMsg.item));
+      console.log(stringifyYaml(deletedMsg.item));
       console.log("New history:");
-      console.log(stringify(await chats.history()));
+      console.log(stringifyYaml(await chats.history()));
     } else {
       console.log("No message to delete.");
     }
@@ -219,7 +223,7 @@ function printPrompt(agent: Agent) {
 async function main() {
   const chats = await Chats.init("history.jsonl");
   let currentAgent = agents.at(-1)!;
-  console.log(stringify(await chats.history()));
+  console.log(stringifyYaml(await chats.history()));
 
   const rl = readline.createInterface({ input: stdin, output: stdout });
 
@@ -233,7 +237,7 @@ async function main() {
         role: "user",
         content: userInput.trim(),
       } as AgentInputItem;
-      process.stdout.write(stringify(msg));
+      process.stdout.write(stringifyYaml(msg));
       await chats.append([msg]);
       const customClient = new OpenAI({
         ...(USE_OPENROUTER
@@ -261,7 +265,7 @@ async function main() {
       const newMessages = stream.history.slice(msgsBeforeAI.length);
       if (newMessages.length) {
         await chats.append(newMessages);
-        console.log(stringify(newMessages));
+        console.log(stringifyYaml(newMessages));
       }
     }
     printPrompt(currentAgent);
