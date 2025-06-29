@@ -74,13 +74,15 @@ export class JSONLAppender<T> extends Store<T> {
         super();
     }
     async put(ref: string, data: T): Promise<void> {
-        const logEntry =
-            this.store.put(ref, data);
-        const line = JSON.stringify(data) + "\n";
+        await this.store.put(ref, data);
+        const logEntry = { key: ref, operation: "put", value: data };
+        const line = JSON.stringify(logEntry) + "\n";
         await fs.appendFile(this.filename, line, "utf-8");
     }
     async delete(ref: string): Promise<void> {
-        // log here
-        return await this.store.delete(ref);
+        await this.store.delete(ref);
+        const logEntry = { key: ref, operation: "delete", value: null };
+        const line = JSON.stringify(logEntry) + "\n";
+        await fs.appendFile(this.filename, line, "utf-8");
     }
 }
