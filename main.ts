@@ -42,6 +42,7 @@ Commands within the chat:
   /agent             List or switch agents.
   /del-last-msg      Delete the last message.
   /clear             Start a new chat.
+  /quit              Exit the application.
   `);
   Deno.exit(0);
 }
@@ -189,7 +190,7 @@ class Chats {
 /**
  * THis is written stupidly cos ai wrote it to serve as a demo of switching agents and deleting messages
  */
-async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], chats: Chats): Promise<Agent> {
+async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], chats: Chats, rl: readline.Interface): Promise<Agent> {
   const [command, ...args] = userInput.slice(1).split(" ");
   if (command === "help") {
     console.log("Available commands:");
@@ -198,6 +199,7 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
     console.log("/agent <number> - Select an agent");
     console.log("/del-last-msg - Delete the last message");
     console.log("/clear - Start a new chat");
+    console.log("/quit - Exit the application");
   } else if (command === "agent") {
     if (args.length === 0) {
       console.log("Available agents:");
@@ -229,6 +231,8 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
   } else if (command === "clear") {
     const id = chats.newChat();
     console.log(`New chat (id:${id}) started.`);
+  } else if (command === "quit") {
+    rl.close();
   } else {
     console.log(`Unknown command: ${command}`);
   }
@@ -251,7 +255,7 @@ async function main() {
   printPrompt(currentAgent);
   for await (const userInput of rl) {
     if (userInput.startsWith("/")) {
-      currentAgent = await handleCommand(userInput, currentAgent, agents, chats);
+      currentAgent = await handleCommand(userInput, currentAgent, agents, chats, rl);
     } else if (userInput) {
       const msg = {
         type: "message",
