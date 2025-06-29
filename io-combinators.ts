@@ -24,24 +24,20 @@ export async function replayJSONL<T>(
     try {
         for await (const line of stream) {
             if (!line || typeof line !== 'object') continue;
-            try {
-                const { key, operation, value } = line as {
-                    key: string;
-                    operation: Operation;
-                    value: T;
-                };
-                switch (operation) {
-                    case "put":
-                        await dest.put(key, value);
-                        break;
-                    case "delete":
-                        await dest.delete(key);
-                        break;
-                    default:
-                        console.warn(`Unknown operation in replay log: ${operation}`);
-                }
-            } catch (e) {
-                console.error(`Failed to process line: "${JSON.stringify(line)}"`, e);
+            const { key, operation, value } = line as {
+                key: string;
+                operation: Operation;
+                value: T;
+            };
+            switch (operation) {
+                case "put":
+                    await dest.put(key, value);
+                    break;
+                case "delete":
+                    await dest.delete(key);
+                    break;
+                default:
+                    throw new Error(`Unknown operation in replay log: ${operation}`);
             }
         }
     } finally {
@@ -67,6 +63,6 @@ export class JSONLAppender<T> extends Store<T> {
     }
 
     async get(ref: string): Promise<T | null> {
-        return this.store.get(ref);
+        return await this.store.get(ref);
     }
 }
