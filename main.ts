@@ -1,23 +1,22 @@
 // deno-lint-ignore-file no-process-global
-import { Agent, AgentInputItem, AgentsError, run } from "@openai/agents";
+import { Agent, AgentInputItem, run } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
-import { JSONAppender, JSONLAppender, replayJSONL } from "./io-combinators.ts";
-import {
-  fetchProxyCurlLogger,
-  prettyJsonLogger,
-} from "@tarasglek/fetch-proxy-curl-logger";
+import { JSONLAppender, replayJSONL } from "./io-combinators.ts";
+// import {
+//   fetchProxyCurlLogger,
+//   prettyJsonLogger,
+// } from "@tarasglek/fetch-proxy-curl-logger";
 
 import { setOpenAIAPI } from "@openai/agents";
-import { DictStore, LoggingStore, Operation, RelativeStore, Store } from "./storage-combinators.ts";
-import { inherits } from "node:util";
+import { DictStore, RelativeStore, Store } from "./storage-combinators.ts";
 
 setOpenAIAPI("chat_completions");
 
-const fetchWithPrettyJson = fetchProxyCurlLogger({
-  logger: prettyJsonLogger,
-});
+// const fetchWithPrettyJson = fetchProxyCurlLogger({
+// logger: prettyJsonLogger,
+// });
 
 const params = {
   model: "openai/gpt-4.1-mini",
@@ -70,7 +69,6 @@ class Chats {
         return dbEntry;
       }
       const newEntry = { id: `${Date.now()}` } as Chat;
-      await chats.put("current", newEntry);
       return newEntry;
     })();
     const allMessages = new RelativeStore<Message>(diskStore as any, "messages");
@@ -114,6 +112,7 @@ class Chats {
       await this.messages.put(msgID, { prevID: this.currentChat.msgID, item: msg });
       this.currentChat.msgID = msgID
     }
+    await this.chats.put("current", this.currentChat);
   }
 }
 
@@ -137,7 +136,7 @@ async function main() {
       apiKey: Deno.env.get(
         "OPENROUTER_API_KEY",
       ),
-      fetch: fetchWithPrettyJson as any,
+      // fetch: fetchWithPrettyJson as any,
     });
     setDefaultOpenAIClient(customClient as any);
     const msgsBeforeAI = await chats.history();
@@ -153,7 +152,7 @@ async function main() {
     console.log("");// add a newline before reprinting stuff
     const newMessages = stream.history.slice(msgsBeforeAI.length);
     if (newMessages.length) {
-      chats.append(newMessages);
+      await chats.append(newMessages);
       console.log(stringify(newMessages))
     }
   }
