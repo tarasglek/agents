@@ -1,4 +1,6 @@
 // deno-lint-ignore-file no-process-global
+import * as readline from "node:readline";
+import { stdin as input, stdout as output } from "node:process";
 import { Agent, AgentInputItem, run } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
@@ -195,19 +197,28 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
 async function main() {
   const chats = await Chats.init("history.jsonl");
   let currentAgent = agents.at(-1)!;
-  console.log(stringify(await chats.history()))
-  while (true) {
-    const userInput = prompt(currentAgent.name + ">");
+  console.log(stringify(await chats.history()));
+
+  const rl = readline.createInterface({ input, output });
+
+  process.stdout.write(currentAgent.name + ">");
+  for await (const userInput of rl) {
     if (!userInput) {
-      process.exit(0);
+      process.stdout.write(currentAgent.name + ">");
+      continue;
     }
 
     if (userInput.startsWith("/")) {
       currentAgent = await handleCommand(userInput, currentAgent, agents, chats);
+      process.stdout.write(currentAgent.name + ">");
       continue;
     }
 
-    const msg = { type: "message", role: "user", content: userInput.trim() } as AgentInputItem
+    const msg = {
+      type: "message",
+      role: "user",
+      content: userInput.trim(),
+    } as AgentInputItem;
     process.stdout.write(stringify(msg));
     await chats.append([msg]);
     const customClient = new OpenAI({
@@ -227,14 +238,16 @@ async function main() {
         compatibleWithNodeStreams: true,
       })
       .pipe(process.stdout);
-    await stream.completed
-    console.log("");// add a newline before reprinting stuff
+    await stream.completed;
+    console.log(""); // add a newline before reprinting stuff
     const newMessages = stream.history.slice(msgsBeforeAI.length);
     if (newMessages.length) {
       await chats.append(newMessages);
-      console.log(stringify(newMessages))
+      console.log(stringify(newMessages));
     }
+    process.stdout.write(currentAgent.name + ">");
   }
+  rl.close();
 }
 
 main().catch((err) => {
