@@ -121,12 +121,43 @@ class Chats {
 
 async function main() {
   const chats = await Chats.init("history.jsonl");
-  const currentAgent = agents.at(-1)!;
+  let currentAgent = agents.at(-1)!;
   console.log(stringify(await chats.history()))
   while (true) {
     const userInput = prompt(">");
     if (!userInput) {
       process.exit(0);
+    }
+
+    if (userInput.startsWith("/")) {
+      const [command, ...args] = userInput.slice(1).split(" ");
+      if (command === "help") {
+        console.log("Available commands:");
+        console.log("/help - Show this help message");
+        console.log("/agent - List available agents");
+        console.log("/agent <number> - Select an agent");
+      } else if (command === "agent") {
+        if (args.length === 0) {
+          console.log("Available agents:");
+          agents.forEach((agent, i) => {
+            console.log(`${i}: ${agent.name}`);
+          });
+          console.log(`Current agent is: ${currentAgent.name}`);
+        } else {
+          const agentIndex = parseInt(args[0], 10);
+          if (
+            !isNaN(agentIndex) && agentIndex >= 0 && agentIndex < agents.length
+          ) {
+            currentAgent = agents[agentIndex];
+            console.log(`Switched to agent: ${currentAgent.name}`);
+          } else {
+            console.log("Invalid agent number.");
+          }
+        }
+      } else {
+        console.log(`Unknown command: ${command}`);
+      }
+      continue;
     }
 
     const msg = { type: "message", role: "user", content: userInput.trim() } as AgentInputItem
