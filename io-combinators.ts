@@ -85,4 +85,8 @@ export class JSONLAppender<T> extends Store<T> {
         const line = JSON.stringify(logEntry) + "\n";
         await fs.appendFile(this.filename, line, "utf-8");
     }
+
+    async get(ref: string): Promise<T | null> {
+        return this.store.get(ref);
+    }
 }
