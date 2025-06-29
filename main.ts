@@ -93,6 +93,8 @@ class Chats {
   newChat() {
     // note this will persist once messages are added
     this.currentChat = { id: `${Date.now()}` }
+    this.messages = new RelativeStore<Message>(this.messages.source, this.currentChat.id);
+
     return this.currentChat.id;
   }
 

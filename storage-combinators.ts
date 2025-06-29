@@ -212,7 +212,7 @@ const fwdSlashJoiner = (a: string, b: string) => `${a}/${b}`;
  * It maps references by prepending a prefix.
  */
 export class RelativeStore<T> extends Store<T> {
-  private readonly source: Store<T>;
+  public readonly source: Store<T>;
   private readonly prefix: string;
   private readonly joiner: (a: string, b: string) => string;
 
