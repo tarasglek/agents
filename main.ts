@@ -14,13 +14,13 @@ import {
 import { setOpenAIAPI } from "@openai/agents";
 import { DictStore, RelativeStore, Store } from "./storage-combinators.ts";
 
-setOpenAIAPI("chat_completions");
 
 let openaiPrefix = '';
 const USE_OPENROUTER = false;
 
 if (USE_OPENROUTER) {
   openaiPrefix = 'openai/';
+  setOpenAIAPI("chat_completions");
 }
 const fetchWithPrettyJson = fetchProxyCurlLogger({
   logger: prettyJsonLogger,
