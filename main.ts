@@ -179,7 +179,7 @@ async function main() {
   let currentAgent = agents.at(-1)!;
   console.log(stringify(await chats.history()))
   while (true) {
-    const userInput = prompt(">");
+    const userInput = prompt(currentAgent.name + ">");
     if (!userInput) {
       process.exit(0);
     }
@@ -192,7 +192,6 @@ async function main() {
     const msg = { type: "message", role: "user", content: userInput.trim() } as AgentInputItem
     process.stdout.write(stringify(msg));
     await chats.append([msg]);
-
     const customClient = new OpenAI({
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: Deno.env.get(
