@@ -82,7 +82,7 @@ async function main() {
     prevMsgID = msg?.prevID;
   }
   msgHistory.forEach(msg => {
-    console.log(stringify(msg))
+    process.stdout.write(stringify(msg));
   });
   while (true) {
     const userInput = prompt(">");
@@ -92,7 +92,7 @@ async function main() {
 
     const msgID = `${Date.now() - parseInt(currentChat.id)}`;
     const msg = { type: "message", role: "user", content: userInput.trim() } as AgentInputItem
-    console.log(stringify(msg));
+    process.stdout.write(stringify(msg));
     await chatMessages.put(msgID, { prevID: currentChat.msgID, item: msg });
     msgHistory.push(msg);
     currentChat = { ...currentChat, msgID };
@@ -123,7 +123,7 @@ async function main() {
       const msgID = `${Date.now() - parseInt(currentChat.id)}`;
       await chatMessages.put(msgID, { prevID: lastMsgId, item: msg });
       lastMsgId = msgID
-      console.log(stringify(msg))
+      process.stdout.write(stringify(msg));
     }
     if (lastMsgId && lastMsgId != currentChat.msgID) {
       await chats.put("current", currentChat);
