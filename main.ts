@@ -4,19 +4,19 @@ import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
 import { JSONLAppender, replayJSONL } from "./io-combinators.ts";
-// import {
-//   fetchProxyCurlLogger,
-//   prettyJsonLogger,
-// } from "@tarasglek/fetch-proxy-curl-logger";
+import {
+  fetchProxyCurlLogger,
+  prettyJsonLogger,
+} from "@tarasglek/fetch-proxy-curl-logger";
 
 import { setOpenAIAPI } from "@openai/agents";
 import { DictStore, RelativeStore, Store } from "./storage-combinators.ts";
 
 setOpenAIAPI("chat_completions");
 
-// const fetchWithPrettyJson = fetchProxyCurlLogger({
-// logger: prettyJsonLogger,
-// });
+const fetchWithPrettyJson = fetchProxyCurlLogger({
+  logger: prettyJsonLogger,
+});
 
 const params = {
   model: "openai/gpt-4.1-mini",
@@ -37,10 +37,10 @@ const mathTutorAgent = new Agent({
 });
 
 const search = new Agent({
-  model: "openai/gpt-4.1-mini:online",
+  model: "google/gemini-2.5-flash:online",
   name: "Search Agent",
   instructions:
-    "You search web and explain results",
+    "You are fed search results and explain question using them",
 });
 
 const triageAgent = new Agent({
@@ -52,7 +52,7 @@ const triageAgent = new Agent({
 });
 
 
-const agents = [historyTutorAgent, mathTutorAgent, triageAgent];
+const agents = [historyTutorAgent, mathTutorAgent, search, triageAgent];
 
 interface Message {
   prevID?: string
@@ -91,6 +91,7 @@ class Chats {
   newChat() {
     // note this will persist once messages are added
     this.currentChat = { id: `${Date.now()}` }
+    return this.currentChat.id;
   }
 
   async history(): Promise<AgentInputItem[]> {
@@ -182,8 +183,8 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
       console.log("No message to delete.");
     }
   } else if (command === "clear") {
-    chats.newChat();
-    console.log("New chat started.");
+    const id = chats.newChat();
+    console.log(`New chat (id:${id}) started.`);
   } else {
     console.log(`Unknown command: ${command}`);
   }
@@ -214,7 +215,7 @@ async function main() {
       apiKey: Deno.env.get(
         "OPENROUTER_API_KEY",
       ),
-      // fetch: fetchWithPrettyJson as any,
+      fetch: true ? fetchWithPrettyJson as any : fetch,
     });
     setDefaultOpenAIClient(customClient as any);
     const msgsBeforeAI = await chats.history();
