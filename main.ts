@@ -118,6 +118,37 @@ class Chats {
   }
 }
 
+function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[]): Agent {
+  const [command, ...args] = userInput.slice(1).split(" ");
+  if (command === "help") {
+    console.log("Available commands:");
+    console.log("/help - Show this help message");
+    console.log("/agent - List available agents");
+    console.log("/agent <number> - Select an agent");
+  } else if (command === "agent") {
+    if (args.length === 0) {
+      console.log("Available agents:");
+      agents.forEach((agent, i) => {
+        console.log(`${i}: ${agent.name}`);
+      });
+      console.log(`Current agent is: ${currentAgent.name}`);
+    } else {
+      const agentIndex = parseInt(args[0], 10);
+      if (
+        !isNaN(agentIndex) && agentIndex >= 0 && agentIndex < agents.length
+      ) {
+        currentAgent = agents[agentIndex];
+        console.log(`Switched to agent: ${currentAgent.name}`);
+      } else {
+        console.log("Invalid agent number.");
+      }
+    }
+  } else {
+    console.log(`Unknown command: ${command}`);
+  }
+  return currentAgent;
+}
+
 
 async function main() {
   const chats = await Chats.init("history.jsonl");
@@ -130,33 +161,7 @@ async function main() {
     }
 
     if (userInput.startsWith("/")) {
-      const [command, ...args] = userInput.slice(1).split(" ");
-      if (command === "help") {
-        console.log("Available commands:");
-        console.log("/help - Show this help message");
-        console.log("/agent - List available agents");
-        console.log("/agent <number> - Select an agent");
-      } else if (command === "agent") {
-        if (args.length === 0) {
-          console.log("Available agents:");
-          agents.forEach((agent, i) => {
-            console.log(`${i}: ${agent.name}`);
-          });
-          console.log(`Current agent is: ${currentAgent.name}`);
-        } else {
-          const agentIndex = parseInt(args[0], 10);
-          if (
-            !isNaN(agentIndex) && agentIndex >= 0 && agentIndex < agents.length
-          ) {
-            currentAgent = agents[agentIndex];
-            console.log(`Switched to agent: ${currentAgent.name}`);
-          } else {
-            console.log("Invalid agent number.");
-          }
-        }
-      } else {
-        console.log(`Unknown command: ${command}`);
-      }
+      currentAgent = handleCommand(userInput, currentAgent, agents);
       continue;
     }
 
