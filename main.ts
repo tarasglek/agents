@@ -117,16 +117,14 @@ class Chats {
     await this.chats.put("current", this.currentChat);
   }
 
-  async deleteLastMessage(): Promise<void> {
+  async deleteLastMessage(): Promise<Message | null> {
     if (!this.currentChat.msgID) {
-      console.log("No message to delete.");
-      return;
+      return null;
     }
     const lastMsg = await this.messages.get(this.currentChat.msgID);
     this.currentChat.msgID = lastMsg?.prevID;
     await this.chats.put("current", this.currentChat);
-    console.log("Deleted last message. New history:");
-    console.log(stringify(await this.history()));
+    return lastMsg;
   }
 }
 
@@ -160,10 +158,15 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
       }
     }
   } else if (command === "del-last-msg") {
-    await chats.deleteLastMessage();
-    console.log("deleted");
-    console.log(stringify(await chats.history()))
-
+    const deletedMsg = await chats.deleteLastMessage();
+    if (deletedMsg) {
+      console.log("Deleted last message:");
+      console.log(stringify(deletedMsg.item));
+      console.log("New history:");
+      console.log(stringify(await chats.history()));
+    } else {
+      console.log("No message to delete.");
+    }
   } else {
     console.log(`Unknown command: ${command}`);
   }
