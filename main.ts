@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-process-global
 import * as readline from "node:readline";
-import { stdin as input, stdout as output } from "node:process";
+import { stdin, stdout } from "node:process";
 import { Agent, AgentInputItem, run } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
@@ -199,7 +199,7 @@ async function main() {
   let currentAgent = agents.at(-1)!;
   console.log(stringify(await chats.history()));
 
-  const rl = readline.createInterface({ input, output });
+  const rl = readline.createInterface({ input: stdin, output: stdout });
 
   process.stdout.write(currentAgent.name + ">");
   for await (const userInput of rl) {
