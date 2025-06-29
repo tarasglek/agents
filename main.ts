@@ -22,8 +22,29 @@ function stringifyYaml(obj: unknown): string {
 
 const flags = parseArgs(Deno.args, {
   string: ["provider"],
-  boolean: ["trace"],
+  boolean: ["trace", "help"],
+  alias: { "h": "help" },
 });
+
+if (flags.help) {
+  console.log(`
+Usage: deno run -A main.ts [options]
+
+An interactive chat with OpenAI agents.
+
+Options:
+  --provider <name>  Specify the provider (e.g., 'openai', 'openrouter'). Defaults to 'openai'.
+  --trace            Enable tracing of API requests.
+  --help, -h         Show this help message.
+
+Commands within the chat:
+  /help              Show in-chat command help.
+  /agent             List or switch agents.
+  /del-last-msg      Delete the last message.
+  /clear             Start a new chat.
+  `);
+  Deno.exit(0);
+}
 
 const provider = flags.provider ?? "openai";
 const USE_OPENROUTER = provider === "openrouter";
