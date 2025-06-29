@@ -115,9 +115,9 @@ async function main() {
       .pipe(process.stdout);
     await stream.completed
     const newMsgHistory = stream.history;
-    for (let i = msgHistory.length; i < newMsgHistory.length; i++) {
-      const msg = newMsgHistory[i];
-      const msgID = `${Date.now() - parseInt(currentChat.id)}${i}`;
+    const newMessages = newMsgHistory.slice(msgHistory.length);
+    for (const [i, msg] of newMessages.entries()) {
+      const msgID = `${Date.now() - parseInt(currentChat.id)}${i + msgHistory.length}`;
       await chatMessages.put(msgID, { prevID: currentChat.msgID, item: msg });
       process.stdout.write(stringify(msg));
       currentChat.msgID = msgID
