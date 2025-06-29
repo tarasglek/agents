@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-process-global
 import * as readline from "node:readline";
 import { stdin, stdout } from "node:process";
-import { Agent, AgentInputItem, run } from "@openai/agents";
+import { Agent, AgentInputItem, run, webSearchTool } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { OpenAI } from "openai";
 import { setDefaultOpenAIClient } from "@openai/agents";
@@ -16,12 +16,18 @@ import { DictStore, RelativeStore, Store } from "./storage-combinators.ts";
 
 setOpenAIAPI("chat_completions");
 
+let openaiPrefix = '';
+const USE_OPENROUTER = false;
+
+if (USE_OPENROUTER) {
+  openaiPrefix = 'openai/';
+}
 const fetchWithPrettyJson = fetchProxyCurlLogger({
   logger: prettyJsonLogger,
 });
 
 const params = {
-  model: "openai/gpt-4.1-mini",
+  model: `${openaiPrefix}gpt-4.1-mini`,
 };
 
 const historyTutorAgent = new Agent({
@@ -39,10 +45,11 @@ const mathTutorAgent = new Agent({
 });
 
 const search = new Agent({
-  model: "google/gemini-2.5-flash:online",
+  ...params,
   name: "Search Agent",
+  tools: [webSearchTool()],
   instructions:
-    "You are fed search results and explain question using them",
+    "You search web and answer questions using info in search results",
 });
 
 const triageAgent = new Agent({
@@ -203,16 +210,16 @@ async function main() {
 
   const rl = readline.createInterface({ input: stdin, output: stdout });
 
-  process.stdout.write(currentAgent.name + ">");
+  process.stdout.write(currentAgent.name + "> ");
   for await (const userInput of rl) {
     if (!userInput) {
-      process.stdout.write(currentAgent.name + ">");
+      process.stdout.write(currentAgent.name + "> ");
       continue;
     }
 
     if (userInput.startsWith("/")) {
       currentAgent = await handleCommand(userInput, currentAgent, agents, chats);
-      process.stdout.write(currentAgent.name + ">");
+      process.stdout.write(currentAgent.name + "> ");
       continue;
     }
 
@@ -223,13 +230,14 @@ async function main() {
     } as AgentInputItem;
     process.stdout.write(stringify(msg));
     await chats.append([msg]);
-    const customClient = new OpenAI({
+    const customClient = new OpenAI(...(USE_OPENROUTER ? {
+
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: Deno.env.get(
         "OPENROUTER_API_KEY",
       ),
-      fetch: true ? fetchWithPrettyJson as any : fetch,
-    });
+      //  fetch: false ? fetchWithPrettyJson as any : fetch,
+    } : {}));
     setDefaultOpenAIClient(customClient as any);
     const msgsBeforeAI = await chats.history();
     const stream = await run(currentAgent, msgsBeforeAI, {
