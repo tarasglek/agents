@@ -6,22 +6,14 @@ export async function replayJSONL<T>(
     src: string,
     dest: Store<T>,
 ): Promise<void> {
-    let fileHandle;
     try {
-        fileHandle = await Deno.open(src, { read: true });
-    } catch (error) {
-        if (error instanceof Deno.errors.NotFound) {
-            return; // File doesn't exist, exit gracefully.
-        }
-        throw error;
-    }
+        using fileHandle = await Deno.open(src, { read: true });
 
-    const stream = fileHandle.readable
-        .pipeThrough(new TextDecoderStream()) // decode Uint8Array to string
-        .pipeThrough(new TextLineStream()) // split string line by line
-        .pipeThrough(new JsonParseStream()); // parse each chunk as JSON
+        const stream = fileHandle.readable
+            .pipeThrough(new TextDecoderStream()) // decode Uint8Array to string
+            .pipeThrough(new TextLineStream()) // split string line by line
+            .pipeThrough(new JsonParseStream()); // parse each chunk as JSON
 
-    try {
         for await (const line of stream) {
             if (!line || typeof line !== 'object') continue;
             const { key, operation, value } = line as {
@@ -40,8 +32,11 @@ export async function replayJSONL<T>(
                     throw new Error(`Unknown operation in replay log: ${operation}`);
             }
         }
-    } finally {
-        fileHandle.close();
+    } catch (error) {
+        if (error instanceof Deno.errors.NotFound) {
+            return; // File doesn't exist, exit gracefully.
+        }
+        throw error;
     }
 }
 
