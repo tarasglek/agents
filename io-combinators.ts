@@ -69,12 +69,18 @@ export async function replayJSONL<T>(
     }
 }
 
-export class JSONAppender<T> extends Store<T> {
-    constructor(public filename: string) {
+export class JSONLAppender<T> extends Store<T> {
+    constructor(public filename: string, private store: Store<T>) {
         super();
     }
-    async put(_ref: string, data: T): Promise<void> {
+    async put(ref: string, data: T): Promise<void> {
+        const logEntry =
+            this.store.put(ref, data);
         const line = JSON.stringify(data) + "\n";
         await fs.appendFile(this.filename, line, "utf-8");
+    }
+    async delete(ref: string): Promise<void> {
+        // log here
+        return await this.store.delete(ref);
     }
 }
