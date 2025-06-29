@@ -86,16 +86,41 @@ const search = new Agent({
     "You search web and answer questions using info in search results",
 });
 
+const agents = [historyTutorAgent, mathTutorAgent, search];
+
+try {
+  const server = new MCPServerStdio({
+    fullCommand: "rs_filesystem --mcp",
+    env: {
+      "MCP_RS_FILESYSTEM_ALLOWED_DIRECTORIES": Deno.cwd(),
+    },
+  });
+  await server.connect();
+
+  const coder = new Agent({
+    ...params,
+    name: "Coder Agent",
+    instructions:
+      "You are a terse coder. You can edit files. You carefully use git to version your changes.",
+    mcpServers: [server],
+  });
+
+  agents.push(coder);
+} catch (e) {
+  console.error(`Failed to load rs_filesystem mcp`, e)
+}
+
+
+
 const triageAgent = new Agent({
   ...params,
   name: "Triage Agent",
   instructions:
     "You determine which agent to use based on the user's question",
-  handoffs: [historyTutorAgent, mathTutorAgent, search],
+  handoffs: agents,
 });
 
-
-const agents = [historyTutorAgent, mathTutorAgent, search, triageAgent];
+agents.push(triageAgent);
 
 interface Message {
   prevID?: string
@@ -246,23 +271,6 @@ function printPrompt(agent: Agent) {
 
 
 async function main() {
-  const server = new MCPServerStdio({
-    fullCommand: "rs_filesystem --mcp",
-    env: {
-      "MCP_RS_FILESYSTEM_ALLOWED_DIRECTORIES": Deno.cwd(),
-    },
-  });
-  await server.connect();
-
-  const coderAgent = new Agent({
-    ...params,
-    name: "Coder Agent",
-    instructions:
-      "You are a terse coder. You can edit files. You carefully use git to version your changes.",
-    mcpServers: [server],
-  });
-  agents.push(coderAgent);
-
   const chats = await Chats.init("history.jsonl");
   let currentAgent = agents.at(-1)!;
   console.log(stringifyYaml(await chats.history()));
