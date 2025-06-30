@@ -10,4 +10,7 @@ to run the cli
 Note how triage agent(openai part of code based on agent sdk example) does agent stuff
 
 
-Note how we successfully persist 
+Note how we successfully persist!
+
+TODO borrow these prompts or something:
+https://kirshatrov.com/posts/claude-code-internals
