@@ -3,6 +3,7 @@ import { Agent, AgentInputItem, MCPServerStdio, run, tool, webSearchTool } from 
 import { stringify } from "jsr:@std/yaml";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { OpenAI } from "openai";
+import { z } from 'zod';
 import { setDefaultOpenAIClient } from "@openai/agents";
 import { JSONLAppender, replayJSONL } from "./io-combinators.ts";
 import {
@@ -103,14 +104,7 @@ try {
   const fetchUrlTool = tool({
     name: 'fetch_url',
     description: 'Fetch the content of a given URL using the JS fetch API',
-    parameters: {
-    type: 'object',
-    properties: {
-      url: { type: 'string', format: 'uri' },
-    },
-    required: ['url'],
-    additionalProperties: false,
-  },
+    parameters: z.object({ url: z.string().url() }),
     async execute({ url }) {
       const fetchUrl = `https://markdown.download/${url}`;
       const response = await fetch(fetchUrl);
