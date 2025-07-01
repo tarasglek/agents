@@ -334,7 +334,7 @@ async function main() {
             ),
           }
           : {}),
-        fetch: USE_TRACE ? fetchWithPrettyJson as any : undefined,
+        fetch: USE_TRACE ? fetchWithPrettyJson : undefined,
       });
       setDefaultOpenAIClient(customClient as any);
       const msgsBeforeAI = await chats.history();
