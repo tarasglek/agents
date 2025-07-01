@@ -100,9 +100,26 @@ try {
   });
   await server.connect();
 
-  const coder = new Agent({
+  import { tool } from '@openai/agents';
+import { z } from 'zod';
+
+const fetchUrlTool = tool({
+  name: 'fetch_url',
+  description: 'Fetch the content of a given URL using the JS fetch API',
+  parameters: z.object({ url: z.string().url() }),
+  async execute({ url }) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+    }
+    return await response.text();
+  },
+});
+
+const coder = new Agent({
     ...params,
     name: "Coder Agent",
+    tools: [fetchUrlTool],
     instructions:
       `You are an agent for T Code. Given the user's prompt, you should use the tools available to you to answer the user's question.
 
@@ -122,6 +139,7 @@ Today's date: ${new Date().toISOString().split("T")[0]}
 `,
     mcpServers: [server],
   });
+
 
   agents.push(coder);
 } catch (e) {
