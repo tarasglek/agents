@@ -184,7 +184,7 @@ class Chats {
       const newEntry = { id: `${Date.now()}` } as Chat;
       return newEntry;
     })();
-    const allMessages = new RelativeStore<Message>(diskStore as any, "messages");
+    const allMessages = new RelativeStore<Message>(diskStore, "messages");
     const chatMessages = new RelativeStore<Message>(allMessages, currentChat.id);
 
     const chat = new Chats(currentChat, chats, chatMessages);
