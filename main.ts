@@ -104,7 +104,7 @@ try {
   const fetchUrlTool = tool({
     name: 'fetch_url',
     description: 'Fetch the content of a given URL using the JS fetch API',
-    parameters: z.object({ url: z.string().url() }),
+    parameters: z.object({ url: z.string() }),
     async execute({ url }) {
       const fetchUrl = `https://markdown.download/${url}`;
       const response = await fetch(fetchUrl);
