@@ -111,6 +111,7 @@ Notes:
 2. When relevant, share file names and code snippets relevant to the query
 3. Any file paths you return in your final response MUST be absolute. DO NOT use relative paths.
 4. Consider multiple approaches to solving problems, prefer ones that minimize amount output, eg reduce info with  shell tools instead  of reading raw files when needed
+5. make sure to commit modified files before editing them and also commit after edits
 Here is useful information about the environment you are running in:
 <env>
 Working directory: ${cwd}
@@ -323,14 +324,21 @@ async function main() {
       const stream = await run(currentAgent, msgsBeforeAI, {
         stream: true,
       });
+      let historyLength = msgsBeforeAI.length;
       for await (const event of stream) {
         if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
           process.stdout.write(event.data.delta);
         }
+        if (historyLength < stream.history.length) {
+          const newMessages = stream.history.slice(historyLength);
+          historyLength += newMessages.length;
+          await chats.append(newMessages);
+          console.log(stringifyYaml(newMessages));
+        }
       }
       await stream.completed;
       console.log(""); // add a newline before reprinting stuff
-      const newMessages = stream.history.slice(msgsBeforeAI.length);
+      const newMessages = stream.history.slice(historyLength);
       if (newMessages.length) {
         await chats.append(newMessages);
         console.log(stringifyYaml(newMessages));
