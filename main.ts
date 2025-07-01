@@ -115,7 +115,7 @@ Here is useful information about the environment you are running in:
 <env>
 Working directory: ${cwd}
 Is directory a git repo: Yes
-Platform: ${Deno.build.os}
+Platform: ${process.platform}
 Today's date: ${new Date().toISOString().split("T")[0]}
 </env>
 `,
@@ -323,11 +323,11 @@ async function main() {
       const stream = await run(currentAgent, msgsBeforeAI, {
         stream: true,
       });
-      stream
-        .toTextStream({
-          compatibleWithNodeStreams: true,
-        })
-        .pipe(process.stdout);
+      for await (const event of stream) {
+        if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
+          process.stdout.write(event.data.delta);
+        }
+      }
       await stream.completed;
       console.log(""); // add a newline before reprinting stuff
       const newMessages = stream.history.slice(msgsBeforeAI.length);
