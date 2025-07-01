@@ -109,6 +109,7 @@ try {
       url: { type: 'string', format: 'uri' },
     },
     required: ['url'],
+    additionalProperties: false,
   },
     async execute({ url }) {
       const fetchUrl = `https://markdown.download/${url}`;
