@@ -62,6 +62,10 @@ const params = {
   model: `${openaiPrefix}gpt-4.1-mini`,
 };
 
+if (USE_OPENROUTER) {
+  params.model = 'openrouter/cypher-alpha:free'
+}
+
 const historyTutorAgent = new Agent({
   ...params,
   name: "History Tutor",
@@ -87,10 +91,11 @@ const search = new Agent({
 const agents = [historyTutorAgent, mathTutorAgent, search];
 
 try {
+  const cwd = Deno.cwd();
   const server = new MCPServerStdio({
     fullCommand: "rs_filesystem --mcp",
     env: {
-      "MCP_RS_FILESYSTEM_ALLOWED_DIRECTORIES": Deno.cwd(),
+      "MCP_RS_FILESYSTEM_ALLOWED_DIRECTORIES": cwd,
     },
   });
   await server.connect();
@@ -99,7 +104,20 @@ try {
     ...params,
     name: "Coder Agent",
     instructions:
-      "You are a terse coder. You can edit files. You carefully use git to version your changes.",
+      `You are an agent for Claude Code, Anthropic's official CLI for Claude. Given the user's prompt, you should use the tools available to you to answer the user's question.
+
+Notes:
+1. IMPORTANT: You should be concise, direct, and to the point, since your responses will be displayed on a command line interface. Answer the user's question directly, without elaboration, explanation, or details. One word answers are best. Avoid introductions, conclusions, and explanations. You MUST avoid text before/after your response, such as \"The answer is <answer>.\", \"Here is the content of the file...\" or \"Based on the information provided, the answer is...\" or \"Here is what I will do next...\".
+2. When relevant, share file names and code snippets relevant to the query
+3. Any file paths you return in your final response MUST be absolute. DO NOT use relative paths.
+Here is useful information about the environment you are running in:
+<env>
+Working directory: ${cwd}
+Is directory a git repo: Yes
+Platform: macos
+Today's date: 2025-04-13
+</env>
+`,
     mcpServers: [server],
   });
 
