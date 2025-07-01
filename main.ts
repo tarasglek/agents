@@ -175,7 +175,7 @@ class Chats {
     const memoryStore = new DictStore<Chat | Message>();
     await replayJSONL(filename, memoryStore);
     const diskStore = new JSONLAppender(filename, memoryStore);
-    const chats = new RelativeStore<Chat>(diskStore as any, "chats");
+    const chats = new RelativeStore<Chat>(diskStore, "chats");
     const currentChat = await (async function () {
       const dbEntry = await chats.get("current");
       if (dbEntry) {
