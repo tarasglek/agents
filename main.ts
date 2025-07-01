@@ -336,7 +336,7 @@ async function main() {
           : {}),
         fetch: USE_TRACE ? fetchWithPrettyJson : undefined,
       });
-      setDefaultOpenAIClient(customClient as any);
+      setDefaultOpenAIClient(customClient);
       const msgsBeforeAI = await chats.history();
       const stream = await run(currentAgent, msgsBeforeAI, {
         stream: true,
