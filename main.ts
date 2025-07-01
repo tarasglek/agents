@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-process-global
-import { Agent, AgentInputItem, MCPServerStdio, run, webSearchTool } from "@openai/agents";
+import { Agent, AgentInputItem, MCPServerStdio, run, tool, webSearchTool } from "@openai/agents";
 import { stringify } from "jsr:@std/yaml";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { OpenAI } from "openai";
@@ -100,24 +100,27 @@ try {
   });
   await server.connect();
 
-  import { tool } from '@openai/agents';
-import { z } from 'zod';
-
-const fetchUrlTool = tool({
-  name: 'fetch_url',
-  description: 'Fetch the content of a given URL using the JS fetch API',
-  parameters: z.object({ url: z.string().url() }),
-  async execute({ url }) {
-    const fetchUrl = `https://markdown.download${url}`;
-    const response = await fetch(fetchUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${fetchUrl}: ${response.statusText}`);
-    }
-    return await response.text();
+  const fetchUrlTool = tool({
+    name: 'fetch_url',
+    description: 'Fetch the content of a given URL using the JS fetch API',
+    parameters: {
+    type: 'object',
+    properties: {
+      url: { type: 'string', format: 'uri' },
+    },
+    required: ['url'],
   },
-});
+    async execute({ url }) {
+      const fetchUrl = `https://markdown.download/${url}`;
+      const response = await fetch(fetchUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${fetchUrl}: ${response.statusText}`);
+      }
+      return await response.text();
+    },
+  });
 
-const coder = new Agent({
+  const coder = new Agent({
     ...params,
     name: "Coder Agent",
     tools: [fetchUrlTool],
