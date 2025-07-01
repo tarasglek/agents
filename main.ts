@@ -114,8 +114,8 @@ Here is useful information about the environment you are running in:
 <env>
 Working directory: ${cwd}
 Is directory a git repo: Yes
-Platform: macos
-Today's date: 2025-04-13
+Platform: ${Deno.build.os}
+Today's date: ${new Date().toISOString().split("T")[0]}
 </env>
 `,
     mcpServers: [server],
