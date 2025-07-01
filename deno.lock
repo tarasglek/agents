@@ -8,10 +8,11 @@
     "jsr:@std/streams@0.224.0": "0.224.0",
     "jsr:@std/yaml@*": "1.0.5",
     "jsr:@tarasglek/fetch-proxy-curl-logger@^0.0.9": "0.0.9",
-    "npm:@openai/agents@^0.0.10": "0.0.10",
+    "npm:@openai/agents@^0.0.10": "0.0.10_zod@3.25.67",
     "npm:@types/node@*": "22.12.0",
     "npm:openai@5.8.2": "5.8.2_ws@8.18.2_zod@3.25.67",
-    "npm:openai@^5.8.2": "5.8.2_ws@8.18.2_zod@3.25.67"
+    "npm:openai@^5.8.2": "5.8.2_ws@8.18.2_zod@3.25.67",
+    "npm:zod@^3.25.67": "3.25.67"
   },
   "jsr": {
     "@std/assert@1.0.13": {
@@ -106,6 +107,16 @@
       ]
     },
     "@openai/agents@0.0.10": {
+      "integrity": "sha512-HIjQQSaZRceSDnraZGIjAW9x3fH1peHUbtidvKsLCGZgdowhE5HKX4OCbc+SHG8H3ajH/3ZJ43bZ7lNWe5+pAw==",
+      "dependencies": [
+        "@openai/agents-core@0.0.10_zod@3.25.67",
+        "@openai/agents-openai",
+        "@openai/agents-realtime",
+        "debug",
+        "openai@5.8.2_ws@8.18.2_zod@3.25.67"
+      ]
+    },
+    "@openai/agents@0.0.10_zod@3.25.67": {
       "integrity": "sha512-HIjQQSaZRceSDnraZGIjAW9x3fH1peHUbtidvKsLCGZgdowhE5HKX4OCbc+SHG8H3ajH/3ZJ43bZ7lNWe5+pAw==",
       "dependencies": [
         "@openai/agents-core@0.0.10_zod@3.25.67",
@@ -639,6 +650,11 @@
       "jsr:@tarasglek/fetch-proxy-curl-logger@^0.0.9",
       "npm:@openai/agents@^0.0.10",
       "npm:openai@5.8.2"
-    ]
+    ],
+    "packageJson": {
+      "dependencies": [
+        "npm:zod@^3.25.67"
+      ]
+    }
   }
 }
