@@ -8,6 +8,7 @@
     "jsr:@std/streams@0.224.0": "0.224.0",
     "jsr:@std/yaml@*": "1.0.5",
     "jsr:@tarasglek/fetch-proxy-curl-logger@^0.0.9": "0.0.9",
+    "npm:@openai/agents-core@^0.0.10": "0.0.10_zod@3.25.67",
     "npm:@openai/agents@^0.0.10": "0.0.10_zod@3.25.67",
     "npm:@types/node@*": "22.12.0",
     "npm:openai@5.8.2": "5.8.2_ws@8.18.2_zod@3.25.67",
@@ -62,7 +63,7 @@
       "dependencies": [
         "@openai/zod@npm:zod@3.25.67",
         "debug",
-        "openai@5.8.2_zod@3.25.67_ws@8.18.2",
+        "openai@5.8.2_ws@8.18.2_zod@3.25.67",
         "zod"
       ],
       "optionalDependencies": [
@@ -653,6 +654,7 @@
     ],
     "packageJson": {
       "dependencies": [
+        "npm:@openai/agents-core@^0.0.10",
         "npm:zod@^3.25.67"
       ]
     }

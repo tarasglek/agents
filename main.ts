@@ -1,5 +1,7 @@
 // deno-lint-ignore-file no-process-global
 import { Agent, AgentInputItem, MCPServerStdio, run, tool, webSearchTool } from "@openai/agents";
+import { RECOMMENDED_PROMPT_PREFIX } from '@openai/agents-core/extensions';
+
 import { stringify } from "jsr:@std/yaml";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { OpenAI } from "openai";
@@ -151,7 +153,7 @@ const triageAgent = new Agent({
   ...params,
   name: "Triage Agent",
   instructions:
-    "You determine which agent to use based on the user's question",
+    RECOMMENDED_PROMPT_PREFIX + "You determine which agent to use based on the user's question",
   handoffs: agents,
 });
 
