@@ -22,7 +22,7 @@ function stringifyYaml(obj: unknown): string {
 }
 
 const flags = parseArgs(Deno.args, {
-  string: ["provider"],
+  string: ["provider", "model"],
   boolean: ["trace", "help"],
   alias: { "h": "help" },
 });
@@ -35,6 +35,7 @@ An interactive chat with OpenAI agents.
 
 Options:
   --provider <name>  Specify the provider (e.g., 'openai', 'openrouter'). Defaults to 'openai'.
+  --model <name>     Specify the model to use.
   --trace            Enable tracing of API requests.
   --help, -h         Show this help message.
 
@@ -62,12 +63,8 @@ const fetchWithPrettyJson = fetchProxyCurlLogger({
 });
 
 const params = {
-  model: `${openaiPrefix}gpt-4.1-mini`,
+  model: flags.model ?? (USE_OPENROUTER ? 'openrouter/cypher-alpha:free' : `${openaiPrefix}gpt-4.1-mini`),
 };
-
-if (USE_OPENROUTER) {
-  params.model = 'openrouter/cypher-alpha:free'
-}
 
 const historyTutorAgent = new Agent({
   ...params,
