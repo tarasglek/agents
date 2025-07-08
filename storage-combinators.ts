@@ -205,6 +205,35 @@ export class ConsoleStore extends Store<string> {
   }
 }
 
+/**
+ * A ProxyStore combinator that forwards all calls to its source.
+ * This can be useful as a base class for other combinators.
+ */
+export class ProxyStore<T> extends Store<T> {
+  public readonly source: Store<T>;
+
+  constructor(source: Store<T>) {
+    super();
+    this.source = source;
+  }
+
+  async get(ref: string): Promise<T | null> {
+    return this.source.get(ref);
+  }
+
+  async put(ref: string, data: T): Promise<void> {
+    return this.source.put(ref, data);
+  }
+
+  async merge(ref: string, data: T): Promise<void> {
+    return this.source.merge(ref, data);
+  }
+
+  async delete(ref: string): Promise<void> {
+    return this.source.delete(ref);
+  }
+}
+
 const fwdSlashJoiner = (a: string, b: string) => `${a}/${b}`;
 
 /**
