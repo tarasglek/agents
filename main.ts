@@ -174,7 +174,7 @@ class Chats {
     const memoryStore = new DictStore<Chat | Message>();
     await replayJSONL(filename, memoryStore);
     const diskStore = new JSONLAppender(filename, memoryStore);
-    const chats = new RelativeStore<Chat>(diskStore, "chats");
+    const chats = new RelativeStore<Chat>(diskStore as unknown as Store<Chat>, "chats");
     const currentChat = await (async function () {
       const dbEntry = await chats.get("current");
       if (dbEntry) {
@@ -183,7 +183,7 @@ class Chats {
       const newEntry = { id: `${Date.now()}` } as Chat;
       return newEntry;
     })();
-    const allMessages = new RelativeStore<Message>(diskStore, "messages");
+    const allMessages = new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages");
     const chatMessages = new RelativeStore<Message>(allMessages, currentChat.id);
 
     const chat = new Chats(currentChat, chats, chatMessages);
