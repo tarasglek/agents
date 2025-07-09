@@ -223,6 +223,9 @@ class History {
   }
 
   async appendMessages(messages: Message[]): Promise<void> {
+    if (messages.length === 0) {
+      return;
+    }
     let currentChat = await this.chats.current();
     const currentMessages = await this.messageStore();
     for (const msg of messages) {
@@ -264,7 +267,8 @@ class History {
     const allMessages = new proxyClass(new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages"));
 
     const chats = new Chats(relativeChats);
-    return new History(chats, allMessages)
+    const ret = new History(chats, allMessages)
+    return ret;
   }
 }
 
@@ -327,7 +331,8 @@ function getPrompt(agent: Agent): string {
 
 class MessagePrinter extends ProxyStore<Message> {
   async put(ref: string, data: Message): Promise<void> {
-    console.log(stringifyYaml([data]));
+    await process.stdout.write("\n" + stringifyYaml([data]) + "\n");
+
     return super.put(ref, data);
   }
 }
@@ -344,14 +349,13 @@ async function main() {
       break;
     }
     if (userInput.startsWith("/")) {
-      currentAgent = await handleCommand(userInput, currentAgent, agents, history.chats);
+      currentAgent = await handleCommand(userInput, currentAgent, agents, history);
     } else if (userInput) {
       const msg = {
         type: "message",
         role: "user",
         content: userInput.trim(),
       } as AgentInputItem;
-      process.stdout.write(stringifyYaml(msg));
       await history.appendMessages([msg]);
       const customClient = new OpenAI({
         ...(USE_OPENROUTER
@@ -378,16 +382,13 @@ async function main() {
           const newMessages = stream.history.slice(historyLength);
           historyLength += newMessages.length;
           await history.appendMessages(newMessages);
-          console.log(stringifyYaml(newMessages));
         }
       }
       await stream.completed;
       console.log(""); // add a newline before reprinting stuff
       const newMessages = stream.history.slice(historyLength);
-      if (newMessages.length) {
-        await history.appendMessages(newMessages);
-        console.log(stringifyYaml(newMessages));
-      }
+      // shouldn't have new messages here cos they should all appear during streaming
+      await history.appendMessages(newMessages);
     }
   }
 }
