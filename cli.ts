@@ -242,8 +242,9 @@ const messagePrinterWrapper = (source: Store<Message>) =>
   });
 
 async function main() {
-  const agents = await initAgents(USE_OPENROUTER, USE_TRACE);
+  const agents = await initAgents({ USE_OPENROUTER, USE_TRACE, model: flags.model });
   const model = await ChatModel.init("history.jsonl", agents, messagePrinterWrapper);
+
   let currentAgent = agents.at(-1)!;
 
   console.log(stringifyYaml(await model.get()));
@@ -263,26 +264,7 @@ async function main() {
       } as AgentInputItem;
       await model.appendMessages([msg]);
 
-      const msgsBeforeAI = await model.get();
-      const stream = await run(currentAgent, msgsBeforeAI, {
-        stream: true,
-      });
-      let historyLength = msgsBeforeAI.length;
-      for await (const event of stream) {
-        if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
-          process.stdout.write(event.data.delta);
-        }
-        if (historyLength < stream.history.length) {
-          const newMessages = stream.history.slice(historyLength);
-          historyLength += newMessages.length;
-          await model.appendMessages(newMessages);
-        }
-      }
-      await stream.completed;
-      console.log(""); // add a newline before reprinting stuff
-      const newMessages = stream.history.slice(historyLength);
-      // shouldn't have new messages here cos they should all appear during streaming
-      await model.appendMessages(newMessages);
+      await model.llm();
     }
   }
 }
