@@ -14,7 +14,7 @@ import {
 } from "@tarasglek/fetch-proxy-curl-logger";
 
 import { setOpenAIAPI } from "@openai/agents";
-import { DictStore, ProxyStore, RelativeStore, Store } from "./storage-combinators.ts";
+import { createProxyStore, DictStore, ProxyStore, RelativeStore, Store } from "./storage-combinators.ts";
 
 
 function stringifyYaml(obj: unknown): string {
@@ -163,7 +163,6 @@ interface Chat {
   maxMsgIndex?: number
 }
 
-type ProxyClass<T> = new (source: Store<T>) => Store<T>;
 
 /**
  * Store chats with focus on current
@@ -259,12 +258,12 @@ class History {
     return ret;
   }
 
-  static async init(filename: string, proxyClass: ProxyClass<Message>) {
+  static async init(filename: string, wrapper: (source: Store<Message>) => Store<Message>) {
     const memoryStore = new DictStore<Chat | Message>();
     await replayJSONL(filename, memoryStore);
     const diskStore = new JSONLAppender(filename, memoryStore);
     const relativeChats = new RelativeStore<Chat>(diskStore as unknown as Store<Chat>, "chats");
-    const allMessages = new proxyClass(new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages"));
+    const allMessages = wrapper(new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages"));
 
     const chats = new Chats(relativeChats);
     const ret = new History(chats, allMessages)
@@ -329,16 +328,16 @@ function getPrompt(agent: Agent): string {
   return `(${serviceName}) ${agent.name}> `;
 }
 
-class MessagePrinter extends ProxyStore<Message> {
-  async put(ref: string, data: Message): Promise<void> {
-    await process.stdout.write("\n" + stringifyYaml([data]) + "\n");
-
-    return super.put(ref, data);
-  }
-}
+const messagePrinterWrapper = (source: Store<Message>) =>
+  createProxyStore(source, {
+    async put(superPut, ref, data) {
+      await process.stdout.write("\n" + stringifyYaml([data]) + "\n");
+      return superPut(ref, data);
+    },
+  });
 
 async function main() {
-  const history = await History.init("history.jsonl", MessagePrinter);
+  const history = await History.init("history.jsonl", messagePrinterWrapper);
   let currentAgent = agents.at(-1)!;
 
   console.log(stringifyYaml(await history.get()));

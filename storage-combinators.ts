@@ -234,6 +234,53 @@ export class ProxyStore<T> extends Store<T> {
   }
 }
 
+type OperationOverrides<T> = {
+  get?: (superGet: (ref: string) => Promise<T | null>, ref: string) => Promise<T | null>;
+  put?: (superPut: (ref: string, data: T) => Promise<void>, ref: string, data: T) => Promise<void>;
+  merge?: (superMerge: (ref: string, data: T) => Promise<void>, ref: string, data: T) => Promise<void>;
+  delete?: (superDelete: (ref: string) => Promise<void>, ref: string) => Promise<void>;
+};
+
+export function createProxyStore<T>(
+  source: Store<T>,
+  overrides: OperationOverrides<T>,
+): Store<T> {
+  class CustomProxyStore extends ProxyStore<T> {
+    constructor() {
+      super(source);
+    }
+
+    async get(ref: string): Promise<T | null> {
+      if (overrides.get) {
+        return overrides.get(super.get.bind(this), ref);
+      }
+      return super.get(ref);
+    }
+
+    async put(ref: string, data: T): Promise<void> {
+      if (overrides.put) {
+        return overrides.put(super.put.bind(this), ref, data);
+      }
+      return super.put(ref, data);
+    }
+
+    async merge(ref: string, data: T): Promise<void> {
+      if (overrides.merge) {
+        return overrides.merge(super.merge.bind(this), ref, data);
+      }
+      return super.merge(ref, data);
+    }
+
+    async delete(ref: string): Promise<void> {
+      if (overrides.delete) {
+        return overrides.delete(super.delete.bind(this), ref);
+      }
+      return super.delete(ref);
+    }
+  }
+  return new CustomProxyStore();
+}
+
 const fwdSlashJoiner = (a: string, b: string) => `${a}/${b}`;
 
 /**
