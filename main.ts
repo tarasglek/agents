@@ -250,18 +250,21 @@ class History {
   static async init(filename: string, listener: (source: Store<Message>) => Store<Message>) {
     const memoryStore = new DictStore<Message>();
     const chatsStore = new DictStore<Chat>();
+    const chats = new Chats(chatsStore);
+
     // make a proxy store for memoryStore so we can look at keys as we replaying messages
     // and populate chatsStore with chatId= Math.max(old,new maxMsgIndex)
     const replayProxy = createProxyStore(memoryStore, {
       async put(superPut, ref, data) {
         const parts = ref.split("/");
         if (parts[0] === "messages" && parts.length === 3) {
+
           const chatId = parts[1];
           const msgIndex = parseInt(parts[2], 10);
           if (!isNaN(msgIndex)) {
-            const currentMax = (await chatsStore.get(chatId)) ?? -1;
+            const currentMax = (await chats.getMaxMsgIndex(chatId));
             if (msgIndex > currentMax) {
-              await chatsStore.put(chatId, msgIndex);
+              await chats.put(chatId, msgIndex);
             }
           }
         }
@@ -277,7 +280,6 @@ class History {
     const messagesStore = new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages");
     const allMessages = listener(messagesStore);
 
-    const chats = new Chats(chatsStore);
     const ret = new History(chats, allMessages)
     return ret;
   }
