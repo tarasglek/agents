@@ -4,7 +4,7 @@ import process from "node:process";
 
 // Based on "Storage Combinators" paper.
 
-export type Operation = "get" | "put" | "delete";
+export type Operation = "get" | "put" | "delete" | "merge";
 /**
  * The Store class, based on the Storage protocol from Figure 3.
  * It provides a generic, REST-like interface for accessing data.
@@ -410,22 +410,22 @@ export class LoggingStore<T> extends Store<T> {
   }
 
   async get(ref: string): Promise<T | null> {
-    await this.log("GET", ref);
+    await this.log("get", ref);
     return this.source.get(ref);
   }
 
   async put(ref: string, data: T): Promise<void> {
-    await this.log("PUT", ref);
+    await this.log("put", ref);
     return this.source.put(ref, data);
   }
 
   async merge(ref: string, data: T): Promise<void> {
-    await this.log("MERGE", ref);
+    await this.log("merge", ref);
     return this.source.merge(ref, data);
   }
 
   async delete(ref: string): Promise<void> {
-    await this.log("DELETE", ref);
+    await this.log("delete", ref);
     return this.source.delete(ref);
   }
 }
