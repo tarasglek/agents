@@ -84,7 +84,8 @@ class Chats extends ProxyStore<Chat> {
   }
 }
 
-class History {
+class ChatModel {
+  public agents: Agent[] = [];
   constructor(public chats: Chats, private allMessages: Store<Message>) { }
 
   async get(): Promise<Message[]> {
@@ -136,7 +137,7 @@ class History {
     return ret
   }
 
-  static async init(filename: string, listener: (source: Store<Message>) => Store<Message>) {
+  static async init(filename: string, agents: Agent[], listener: (source: Store<Message>) => Store<Message>) {
     const memoryStore = new DictStore<Message>();
     const chatsStore = new DictStore<Chat>();
     const chats = new Chats(chatsStore);
@@ -169,7 +170,8 @@ class History {
     const messagesStore = new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages");
     const allMessages = listener(messagesStore);
 
-    const ret = new History(chats, allMessages)
+    const ret = new ChatModel(chats, allMessages);
+    ret.agents = agents;
     return ret;
   }
 }
@@ -177,7 +179,7 @@ class History {
 /**
  * THis is written stupidly cos ai wrote it to serve as a demo of switching agents and deleting messages
  */
-async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], history: History): Promise<Agent> {
+async function handleCommand(userInput: string, currentAgent: Agent, model: ChatModel): Promise<Agent> {
   const [command, ...args] = userInput.slice(1).split(" ");
   if (command === "help") {
     console.log("Available commands:");
@@ -190,33 +192,33 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
   } else if (command === "agent") {
     if (args.length === 0) {
       console.log("Available agents:");
-      agents.forEach((agent, i) => {
+      model.agents.forEach((agent, i) => {
         console.log(`${i}: ${agent.name}`);
       });
       console.log(`Current agent is: ${currentAgent.name}`);
     } else {
       const agentIndex = parseInt(args[0], 10);
       if (
-        !isNaN(agentIndex) && agentIndex >= 0 && agentIndex < agents.length
+        !isNaN(agentIndex) && agentIndex >= 0 && agentIndex < model.agents.length
       ) {
-        currentAgent = agents[agentIndex];
+        currentAgent = model.agents[agentIndex];
         console.log(`Switched to agent: ${currentAgent.name}`);
       } else {
         console.log("Invalid agent number.");
       }
     }
   } else if (command === "del-last-msg") {
-    const deletedMsg = await history.deleteLastMessage();
+    const deletedMsg = await model.deleteLastMessage();
     if (deletedMsg) {
       console.log("Deleted last message:");
       console.log(stringifyYaml(deletedMsg));
       console.log("New history:");
-      console.log(stringifyYaml(await history.get()));
+      console.log(stringifyYaml(await model.get()));
     } else {
       console.log("No message to delete.");
     }
   } else if (command === "clear") {
-    const chatId = await history.chats.newChat();
+    const chatId = await model.chats.newChat();
     console.log(`New chat (id:${chatId}) started.`);
   } else if (command === "quit") {
     Deno.exit(0);
@@ -240,11 +242,11 @@ const messagePrinterWrapper = (source: Store<Message>) =>
   });
 
 async function main() {
-  const history = await History.init("history.jsonl", messagePrinterWrapper);
   const agents = await initAgents(USE_OPENROUTER, USE_TRACE);
+  const model = await ChatModel.init("history.jsonl", agents, messagePrinterWrapper);
   let currentAgent = agents.at(-1)!;
 
-  console.log(stringifyYaml(await history.get()));
+  console.log(stringifyYaml(await model.get()));
 
   while (true) {
     const userInput = prompt(getPrompt(currentAgent));
@@ -252,16 +254,16 @@ async function main() {
       break;
     }
     if (userInput.startsWith("/")) {
-      currentAgent = await handleCommand(userInput, currentAgent, agents, history);
+      currentAgent = await handleCommand(userInput, currentAgent, model);
     } else if (userInput) {
       const msg = {
         type: "message",
         role: "user",
         content: userInput.trim(),
       } as AgentInputItem;
-      await history.appendMessages([msg]);
+      await model.appendMessages([msg]);
 
-      const msgsBeforeAI = await history.get();
+      const msgsBeforeAI = await model.get();
       const stream = await run(currentAgent, msgsBeforeAI, {
         stream: true,
       });
@@ -273,14 +275,14 @@ async function main() {
         if (historyLength < stream.history.length) {
           const newMessages = stream.history.slice(historyLength);
           historyLength += newMessages.length;
-          await history.appendMessages(newMessages);
+          await model.appendMessages(newMessages);
         }
       }
       await stream.completed;
       console.log(""); // add a newline before reprinting stuff
       const newMessages = stream.history.slice(historyLength);
       // shouldn't have new messages here cos they should all appear during streaming
-      await history.appendMessages(newMessages);
+      await model.appendMessages(newMessages);
     }
   }
 }
