@@ -250,9 +250,25 @@ class History {
   static async init(filename: string, listener: (source: Store<Message>) => Store<Message>) {
     const memoryStore = new DictStore<Message>();
     const chatsStore = new DictStore<Chat>();
-    // make a proxy store for Messages so we can look at keys as we replaying messages
+    // make a proxy store for memoryStore so we can look at keys as we replaying messages
     // and populate chatsStore with chatId= Math.max(old,new maxMsgIndex)
-    await replayJSONL(filename, memoryStore);
+    const replayProxy = createProxyStore(memoryStore, {
+      async put(superPut, ref, data) {
+        const parts = ref.split("/");
+        if (parts[0] === "messages" && parts.length === 3) {
+          const chatId = parts[1];
+          const msgIndex = parseInt(parts[2], 10);
+          if (!isNaN(msgIndex)) {
+            const currentMax = (await chatsStore.get(chatId)) ?? -1;
+            if (msgIndex > currentMax) {
+              await chatsStore.put(chatId, msgIndex);
+            }
+          }
+        }
+        return superPut(ref, data);
+      },
+    });
+    await replayJSONL(filename, replayProxy);
     // appender ensures everything we add to memoryStore is also written to disk
     // we replayJSONL it above ^
     const diskStore = new JSONLAppender(filename, memoryStore);
