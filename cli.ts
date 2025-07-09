@@ -137,6 +137,29 @@ class ChatModel {
     return ret
   }
 
+  async llm(currentAgent: Agent) {
+    const msgsBeforeAI = await this.get();
+    const stream = await run(currentAgent, msgsBeforeAI, {
+      stream: true,
+    });
+    let historyLength = msgsBeforeAI.length;
+    for await (const event of stream) {
+      if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
+        process.stdout.write(event.data.delta);
+      }
+      if (historyLength < stream.history.length) {
+        const newMessages = stream.history.slice(historyLength);
+        historyLength += newMessages.length;
+        await this.appendMessages(newMessages);
+      }
+    }
+    await stream.completed;
+    console.log(""); // add a newline before reprinting stuff
+    const newMessages = stream.history.slice(historyLength);
+    // shouldn't have new messages here cos they should all appear during streaming
+    await this.appendMessages(newMessages);
+  }
+
   static async init(filename: string, agents: Agent[], listener: (source: Store<Message>) => Store<Message>) {
     const memoryStore = new DictStore<Message>();
     const chatsStore = new DictStore<Chat>();
@@ -264,7 +287,7 @@ async function main() {
       } as AgentInputItem;
       await model.appendMessages([msg]);
 
-      await model.llm();
+      await model.llm(currentAgent);
     }
   }
 }
