@@ -14,7 +14,7 @@ import {
 } from "@tarasglek/fetch-proxy-curl-logger";
 
 import { setOpenAIAPI } from "@openai/agents";
-import { DictStore, RelativeStore, Store } from "./storage-combinators.ts";
+import { DictStore, ProxyStore, RelativeStore, Store } from "./storage-combinators.ts";
 
 
 function stringifyYaml(obj: unknown): string {
@@ -156,100 +156,120 @@ const triageAgent = new Agent({
 
 agents.push(triageAgent);
 
-interface Message {
-  prevID?: string
-  item: AgentInputItem
-}
+type Message = AgentInputItem;
 
 interface Chat {
   id: string
-  msgID?: string
+  maxMsgIndex?: number
 }
 
-class Chats {
-  private constructor(private currentChat: Chat, private chats: Store<Chat>, private messages: RelativeStore<Message>) {
+/**
+ * Store chats with focus on current
+ * once we have new current, we archive the "old current"
+ */
+class Chats extends ProxyStore<Chat> {
+
+  constructor(private chats: Store<Chat>) {
+    super(chats);
   }
 
-  static async init(filename: string): Promise<Chats> {
-    const memoryStore = new DictStore<Chat | Message>();
-    await replayJSONL(filename, memoryStore);
-    const diskStore = new JSONLAppender(filename, memoryStore);
-    const chats = new RelativeStore<Chat>(diskStore as unknown as Store<Chat>, "chats");
-    const currentChat = await (async function () {
-      const dbEntry = await chats.get("current");
-      if (dbEntry) {
-        return dbEntry;
+  async get(key: string): Promise<Chat | null> {
+    let ret = await super.get(key);
+    if (!ret) {
+      if (key === "current") {
+        ret = await this.newChat();
       }
-      const newEntry = { id: `${Date.now()}` } as Chat;
-      return newEntry;
-    })();
-    const allMessages = new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages");
-    const chatMessages = new RelativeStore<Message>(allMessages, currentChat.id);
-
-    const chat = new Chats(currentChat, chats, chatMessages);
-    return chat;
+    }
+    return ret;
   }
 
-  newChat() {
-    // note this will persist once messages are added
-    this.currentChat = { id: `${Date.now()}` }
-    this.messages = new RelativeStore<Message>(this.messages.source, this.currentChat.id);
-
-    return this.currentChat.id;
+  async current(): Promise<Chat> {
+    return (await this.get("current"))!;
   }
 
-  async history(): Promise<AgentInputItem[]> {
-    const msgHistory: AgentInputItem[] = []
-    let prevMsgID = this.currentChat.msgID;
-    while (prevMsgID) {
-      const msg = await this.messages.get(prevMsgID)
+  async setCurrent(chat: Chat): Promise<void> {
+    await this.chats.put("current", chat);
+  }
+
+  async newChat() {
+    // first archive the current chat
+    const currentChat = await super.get("current");
+    if (currentChat) {
+      super.put(currentChat.id, currentChat);
+    }
+    const newChat = { id: `${Date.now()}` }
+    await this.chats.put("current", newChat);
+    return newChat;
+  }
+}
+
+class History {
+  constructor(public chats: Chats, private allMessages: Store<Message>) { }
+
+  async get(): Promise<Message[]> {
+    const currentChat = await this.chats.current();
+    const maxMsgIndex = currentChat.maxMsgIndex ?? 0;
+    const currentMessages = await this.messageStore();
+    const ret = [] as Message[];
+    for (let i = 0; i <= maxMsgIndex; i++) {
+      const msg = await currentMessages.get(i.toString());
       if (msg) {
-        msgHistory.unshift(msg.item);
+        ret.push(msg);
       }
-      prevMsgID = msg?.prevID;
     }
-    return msgHistory;
+    return ret;
   }
 
-  /**
-   * @returns unique-within-chat msgIDs based on time
-   */
-  async genMsgId(): Promise<string> {
-    // trim ids relative to convo id
-    const baseID = `${Date.now() - parseInt(this.currentChat.id)}`;
-    let msgID = baseID;
-    let i = 0;
-    // check if we unique
-    while (await this.messages.get(msgID)) {
-      msgID = `${baseID}${i++}`;
+  async appendMessages(messages: Message[]): Promise<void> {
+    let currentChat = await this.chats.current();
+    const currentMessages = await this.messageStore();
+    for (const msg of messages) {
+      const maxMsgIndex = currentChat.maxMsgIndex === undefined ? 0 : (currentChat.maxMsgIndex + 1)
+      currentChat = { ...currentChat, maxMsgIndex };
+      await currentMessages.put(maxMsgIndex.toString(), msg);
     }
-    return msgID;
+    await this.chats.setCurrent(currentChat);
   }
 
-  async append(msgs: AgentInputItem[]): Promise<void> {
-    for (const msg of msgs) {
-      const msgID = await this.genMsgId()
-      await this.messages.put(msgID, { prevID: this.currentChat.msgID, item: msg });
-      this.currentChat.msgID = msgID
-    }
-    await this.chats.put("current", this.currentChat);
+  async messageStore(): Promise<Store<Message>> {
+    const currentChat = await this.chats.current();
+    return new RelativeStore<Message>(this.allMessages, currentChat.id);
   }
 
   async deleteLastMessage(): Promise<Message | null> {
-    if (!this.currentChat.msgID) {
-      return null;
+    const currentChat = await this.chats.current();
+    let ret: Message | null = null;
+    let maxMsgIndex = currentChat.maxMsgIndex;
+    if (maxMsgIndex && maxMsgIndex > 0) {
+      const currentMessages = await this.messageStore();
+      ret = await currentMessages.get(maxMsgIndex.toString());
+      await currentMessages.delete(maxMsgIndex.toString());
+      maxMsgIndex -= 1;
+    } else {
+      maxMsgIndex = undefined;
     }
-    const lastMsg = await this.messages.get(this.currentChat.msgID);
-    this.currentChat.msgID = lastMsg?.prevID;
-    await this.chats.put("current", this.currentChat);
-    return lastMsg;
+    if (currentChat.maxMsgIndex !== maxMsgIndex) {
+      await this.chats.setCurrent({ ...currentChat, maxMsgIndex });
+    }
+    return ret;
+  }
+
+  static async init(filename: string, proxyClass) {
+    const memoryStore = new DictStore<Chat | Message>();
+    await replayJSONL(filename, memoryStore);
+    const diskStore = new JSONLAppender(filename, memoryStore);
+    const relativeChats = new RelativeStore<Chat>(diskStore as unknown as Store<Chat>, "chats");
+    const allMessages = new proxyClass(new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages"));
+
+    const chats = new Chats(relativeChats);
+    return new History(chats, allMessages)
   }
 }
 
 /**
  * THis is written stupidly cos ai wrote it to serve as a demo of switching agents and deleting messages
  */
-async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], chats: Chats): Promise<Agent> {
+async function handleCommand(userInput: string, currentAgent: Agent, agents: Agent[], history: History): Promise<Agent> {
   const [command, ...args] = userInput.slice(1).split(" ");
   if (command === "help") {
     console.log("Available commands:");
@@ -278,18 +298,18 @@ async function handleCommand(userInput: string, currentAgent: Agent, agents: Age
       }
     }
   } else if (command === "del-last-msg") {
-    const deletedMsg = await chats.deleteLastMessage();
+    const deletedMsg = await history.deleteLastMessage();
     if (deletedMsg) {
       console.log("Deleted last message:");
-      console.log(stringifyYaml(deletedMsg.item));
+      console.log(stringifyYaml(deletedMsg));
       console.log("New history:");
-      console.log(stringifyYaml(await chats.history()));
+      console.log(stringifyYaml(await history.get()));
     } else {
       console.log("No message to delete.");
     }
   } else if (command === "clear") {
-    const id = chats.newChat();
-    console.log(`New chat (id:${id}) started.`);
+    const chat = await history.chats.newChat();
+    console.log(`New chat (id:${chat.id}) started.`);
   } else if (command === "quit") {
     Deno.exit(0);
   } else {
@@ -303,11 +323,18 @@ function getPrompt(agent: Agent): string {
   return `(${serviceName}) ${agent.name}> `;
 }
 
+class MessagePrinter extends ProxyStore<Message> {
+  async put(ref: string, data: Message): Promise<void> {
+    console.log(stringifyYaml([data]));
+    return super.put(ref, data);
+  }
+}
 
 async function main() {
-  const chats = await Chats.init("history.jsonl");
+  const history = await History.init("history.jsonl", MessagePrinter);
   let currentAgent = agents.at(-1)!;
-  console.log(stringifyYaml(await chats.history()));
+
+  console.log(stringifyYaml(await history.get()));
 
   while (true) {
     const userInput = prompt(getPrompt(currentAgent));
@@ -315,7 +342,7 @@ async function main() {
       break;
     }
     if (userInput.startsWith("/")) {
-      currentAgent = await handleCommand(userInput, currentAgent, agents, chats);
+      currentAgent = await handleCommand(userInput, currentAgent, agents, history.chats);
     } else if (userInput) {
       const msg = {
         type: "message",
@@ -323,7 +350,7 @@ async function main() {
         content: userInput.trim(),
       } as AgentInputItem;
       process.stdout.write(stringifyYaml(msg));
-      await chats.append([msg]);
+      await history.appendMessages([msg]);
       const customClient = new OpenAI({
         ...(USE_OPENROUTER
           ? {
@@ -336,7 +363,7 @@ async function main() {
         fetch: USE_TRACE ? fetchWithPrettyJson : undefined,
       });
       setDefaultOpenAIClient(customClient);
-      const msgsBeforeAI = await chats.history();
+      const msgsBeforeAI = await history.get();
       const stream = await run(currentAgent, msgsBeforeAI, {
         stream: true,
       });
@@ -348,7 +375,7 @@ async function main() {
         if (historyLength < stream.history.length) {
           const newMessages = stream.history.slice(historyLength);
           historyLength += newMessages.length;
-          await chats.append(newMessages);
+          await history.appendMessages(newMessages);
           console.log(stringifyYaml(newMessages));
         }
       }
@@ -356,7 +383,7 @@ async function main() {
       console.log(""); // add a newline before reprinting stuff
       const newMessages = stream.history.slice(historyLength);
       if (newMessages.length) {
-        await chats.append(newMessages);
+        await history.appendMessages(newMessages);
         console.log(stringifyYaml(newMessages));
       }
     }
