@@ -12,9 +12,9 @@ import {
 import { setOpenAIAPI } from "@openai/agents";
 
 
-export async function initAgents(USE_OPENROUTER: boolean, USE_TRACE: boolean) {
+export async function initAgents(options: { USE_OPENROUTER: boolean, USE_TRACE: boolean, model?: string }) {
   let openaiPrefix = '';
-  if (USE_OPENROUTER) {
+  if (options.USE_OPENROUTER) {
     openaiPrefix = 'openai/';
     setOpenAIAPI("chat_completions");
   }
@@ -22,7 +22,7 @@ export async function initAgents(USE_OPENROUTER: boolean, USE_TRACE: boolean) {
     logger: prettyJsonLogger,
   });
   const customClient = new OpenAI({
-    ...(USE_OPENROUTER
+    ...(options.USE_OPENROUTER
       ? {
         baseURL: "https://openrouter.ai/api/v1",
         apiKey: Deno.env.get(
@@ -30,12 +30,12 @@ export async function initAgents(USE_OPENROUTER: boolean, USE_TRACE: boolean) {
         ),
       }
       : {}),
-    fetch: USE_TRACE ? fetchWithPrettyJson : undefined,
+    fetch: options.USE_TRACE ? fetchWithPrettyJson : undefined,
   });
   setDefaultOpenAIClient(customClient);
 
   const params = {
-    model: flags.model ?? (USE_OPENROUTER ? 'openrouter/cypher-alpha:free' : `${openaiPrefix}gpt-4.1-mini`),
+    model: options.model ?? (options.USE_OPENROUTER ? 'openrouter/cypher-alpha:free' : `${openaiPrefix}gpt-4.1-mini`),
   };
 
   const historyTutorAgent = new Agent({
