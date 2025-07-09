@@ -163,6 +163,8 @@ interface Chat {
   maxMsgIndex?: number
 }
 
+type ProxyClass<T> = new (source: Store<T>) => Store<T>;
+
 /**
  * Store chats with focus on current
  * once we have new current, we archive the "old current"
@@ -254,7 +256,7 @@ class History {
     return ret;
   }
 
-  static async init(filename: string, proxyClass) {
+  static async init(filename: string, proxyClass: ProxyClass<Message>) {
     const memoryStore = new DictStore<Chat | Message>();
     await replayJSONL(filename, memoryStore);
     const diskStore = new JSONLAppender(filename, memoryStore);
