@@ -111,9 +111,10 @@ app.get("/:currentChatId", (c) => {
 
 app.post("/:currentChatId", async (c) => {
   const { currentChatId } = c.req.param();
-  const userInput = await c.req.parseBody();
+  const body = await c.req.parseBody();
+  const userInput = (body as Record<string, string | File>)["input"];
   // reject File for now
-  if (!(userInput instanceof string)) {
+  if (typeof userInput !== "string") {
     return c.text("File input is not supported yet", 400);
   }
   const model = await getModel();
@@ -124,7 +125,7 @@ app.post("/:currentChatId", async (c) => {
     content: userInput.trim(),
   } as AgentInputItem;
   await model.appendMessages([msg]);
-  console.log(body["input"]);
+  console.log(userInput);
   return c.redirect(`/${currentChatId}`);
 });
 
