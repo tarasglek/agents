@@ -34,7 +34,7 @@ function getModel(): Promise<ChatModel> {
   modelPromise = (async () => {
     const agents = await getAgents();
     return await ChatModel.init(
-      "history.jsonl",
+      "data/history.jsonl",
       agents,
       messagePrinterWrapper,
     );
@@ -124,7 +124,8 @@ app.get("/:currentChatId", (c) => {
           continue; // wait for new message
         }
         const newChunk = model.wipMsg.slice(oldWipMsg.length);
-
+        await stream.write(html`${newChunk}`.toString());
+        oldWipMsg = model.wipMsg;
       }
       await stream.write(html`</pre></p>`.toString());
     }
