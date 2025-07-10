@@ -11,5 +11,5 @@ export function stringifyYaml(obj: unknown): string {
         });
     } catch (_e) {
     }
-    return stringify(obj, { skipInvalid: true });
+    return stringify(obj, { skipInvalid: true, quotingType: "'" });
 }
