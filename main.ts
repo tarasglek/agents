@@ -104,7 +104,7 @@ app.get("/chat/:currentChatId", (c) => {
     if (lastMsg?.type === 'message' && lastMsg.role === 'user') {
       // make me a lazy func for agents too
       const agents = await getAgents();
-      const promise = /*do not await*/model.llm(agents[0], currentChatId);
+      const promise = /*do not await*/model.llm(agents[agents.length - 1], currentChatId);
       let oldWipMsg = '';
       // Trick to scroll to the new message as it streams:
       // An anchor tag with `autofocus` will be scrolled into view by the browser.
