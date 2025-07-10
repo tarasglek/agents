@@ -5,7 +5,7 @@ import { initAgents } from "./agents.ts";
 import { ChatModel, Message } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { stringifyYaml } from "./util.ts";
-import { AgentInputItem, user } from "@openai/agents-core";
+import { Agent, AgentInputItem, user } from "@openai/agents-core";
 const messagePrinterWrapper = (source: Store<Message>) =>
   createProxyStore(source, {
     async put(superPut, ref, data) {
@@ -14,16 +14,25 @@ const messagePrinterWrapper = (source: Store<Message>) =>
     },
   });
 
+let agentsPromise: Promise<Agent[]> | null = null;
+function getAgents(): Promise<Agent[]> {
+  if (agentsPromise) {
+    return agentsPromise;
+  }
+  agentsPromise = initAgents({
+    USE_OPENROUTER: !!Deno.env.get("OPENROUTER_API_KEY"),
+    USE_TRACE: false,
+  });
+  return agentsPromise;
+}
+
 let modelPromise: Promise<ChatModel> | null = null;
 function getModel(): Promise<ChatModel> {
   if (modelPromise) {
     return modelPromise;
   }
   modelPromise = (async () => {
-    const agents = await initAgents({
-      USE_OPENROUTER: !!Deno.env.get("OPENROUTER_API_KEY"),
-      USE_TRACE: false,
-    });
+    const agents = await getAgents();
     return await ChatModel.init(
       "history.jsonl",
       agents,
@@ -105,6 +114,7 @@ app.get("/:currentChatId", (c) => {
     }
     if (lastMsg?.type === 'message' && lastMsg.role === 'user') {
       // make me a lazy func for agents too
+      const agents = await getAgents();
       /*do not await*/ model.llm(agents[0]);
       let oldWipMsg = '';
       await stream.write(html`<p id=${(await model.get()).length}><pre>`.toString())
