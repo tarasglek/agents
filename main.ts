@@ -118,6 +118,7 @@ app.get("/:currentChatId", (c) => {
       /*do not await*/ model.llm(agents[0]);
       let oldWipMsg = '';
       // so that the screen doesn't jump around
+      // 50vh = 50% of viewport height
       await stream.write(html`<p id=${(await model.get()).length} style="min-height: 50vh;"><pre>`.toString())
       while (model.wipMsg !== null) {
         if (oldWipMsg === model.wipMsg) {
