@@ -67,28 +67,33 @@ app.get("/stream", (c) => {
     });
 });
 
-app.get("/:currentChatId", async (c) => {
+app.get("/:currentChatId", (c) => {
     const { currentChatId } = c.req.param();
-    return c.html(
-        html`
+    c.header('Content-Type', 'text/html; charset=utf-8');
+    return stream(c, async (stream) => {
+        await stream.write(html`
       <!DOCTYPE html>
       <html>
         <head>
           <link rel="icon" href="https://fav.farm/🤖" />
           <title>Agents ${currentChatId}</title>
         </head>
-        <body>
-          ${(await model.get()).map((msg) => {
-            return html`
+        <body>`);
+
+        for (const msg of await model.get()) {
+            await stream.write(html`
               <p>
                 <pre>${stringifyYaml([msg])}</pre>
               </p>
-            `;
-        })} ${chatInput}
+            `);
+        }
+
+        await stream.write(chatInput);
+        await stream.write(html`
         </body>
       </html>
-    `,
-    );
+    `);
+    });
 });
 
 export default app;
