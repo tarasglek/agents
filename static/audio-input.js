@@ -13,6 +13,19 @@ function log(message) {
   console.log(`+${diff}ms ${message}`);
 }
 
+/**
+ * @param {string} text
+ * @returns {Promise<void>}
+ */
+function speak(text) {
+  return new Promise((resolve, reject) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => resolve();
+    utterance.onerror = (event) => reject(event.error);
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
 class AudioRecorder {
   /**
    * @param {MediaRecorder} mediaRecorder
@@ -82,9 +95,12 @@ class AudioRecorder {
 function startRecordingAndTranscription(
   wakePhraseRegex = /ok[^a-z]+metallica/i,
 ) {
-  if (!("webkitSpeechRecognition" in window) || !("MediaRecorder" in window)) {
+  if (
+    !("webkitSpeechRecognition" in window) || !("MediaRecorder" in window) ||
+    !("speechSynthesis" in window)
+  ) {
     throw new Error(
-      "SpeechRecognition or MediaRecorder not supported in this browser.",
+      "SpeechRecognition, MediaRecorder, or SpeechSynthesis not supported in this browser.",
     );
   }
 
@@ -116,6 +132,7 @@ function startRecordingAndTranscription(
     );
     if (wakePhraseRegex.test(interimTranscript) && !audioRecorder) {
       log("Wake phrase detected!");
+      await speak("Listening");
       audioRecorder = await AudioRecorder.start();
     }
     const TIMEOUT = 3000;
