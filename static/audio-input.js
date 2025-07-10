@@ -11,6 +11,7 @@ function startRecordingAndTranscription(wakePhrase = "ok metallica") {
 
     let finalTranscript = "";
     let speechEndTimeout = null;
+    let wakePhraseDetected = false;
 
     // Initialize the SpeechRecognition object
     const recognition = new webkitSpeechRecognition();
@@ -28,7 +29,14 @@ function startRecordingAndTranscription(wakePhrase = "ok metallica") {
         }
       }
       console.log("Interim transcript:", interimTranscript);
-      //regexp match for wake phrase and console log wake phrase detected
+      if (!wakePhraseDetected) {
+        const currentTranscript = finalTranscript + interimTranscript;
+        const wakePhraseRegex = new RegExp(wakePhrase, "i");
+        if (wakePhraseRegex.test(currentTranscript)) {
+          console.log("Wake phrase detected!");
+          wakePhraseDetected = true;
+        }
+      }
     };
 
     recognition.onerror = function (event) {
