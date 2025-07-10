@@ -120,7 +120,7 @@ app.get("/:currentChatId", (c) => {
       await stream.write(html`<p id=${(await model.get()).length}><pre>`.toString())
       while (model.wipMsg !== null) {
         if (oldWipMsg === model.wipMsg) {
-          await stream.sleep(100);
+          await stream.sleep(1000 / 60); // 60 FPS
           continue; // wait for new message
         }
         const newChunk = model.wipMsg.slice(oldWipMsg.length);
@@ -157,7 +157,7 @@ app.post("/:currentChatId", async (c) => {
     content: userInput.trim(),
   } as AgentInputItem;
   await model.appendMessages([msg]);
-  return c.redirect(`/${currentChatId}#${(await model.get()).length}`);
+  return c.redirect(`/${currentChatId}#${(await model.get()).length - 1}`);
 });
 
 export default app;
