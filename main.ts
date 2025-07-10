@@ -61,6 +61,13 @@ const chatInput = html`
     <button type="submit">Send</button>
   </form>
 `;
+
+const newChatButton = html`
+  <form method="POST" action="/new-chat">
+    <button type="submit">New Chat</button>
+  </form>
+`;
+
 app.get("/", async (c) => {
   const model = await getModel();
   return c.redirect(`/${await model.chats.current()}`);
@@ -100,6 +107,7 @@ app.get("/:currentChatId", (c) => {
           <title>Agents ${currentChatId}</title>
         </head>
         <body>`).toString());
+    await stream.write(newChatButton.toString());
 
     const model = await getModel();
 
@@ -164,6 +172,12 @@ app.post("/:currentChatId", async (c) => {
   } as AgentInputItem;
   await model.appendMessages([msg]);
   return c.redirect(`/${currentChatId}#${(await model.get()).length}`);
+});
+
+app.post("/new-chat", async (c) => {
+  const model = await getModel();
+  const newChatId = await model.chats.newChat();
+  return c.redirect(`/${newChatId}`);
 });
 
 export default app;
