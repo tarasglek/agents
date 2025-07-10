@@ -16,6 +16,10 @@ const model = await ChatModel.init("history.jsonl", agents, messagePrinterWrappe
 
 const app = new Hono()
 
+app.get('/', (c) => {
+    return c.redirect(`/${crypto.randomUUID()}`)
+})
+
 app.get('/:currentChatId', (c) => {
     const { currentChatId } = c.req.param()
     return c.html(
