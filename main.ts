@@ -47,7 +47,7 @@ const chatInput = html`
   <form method="POST" action="">
     <label for="input">User</label>
     <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
-      <textarea id="input" name="input" style="flex-grow: 1;"></textarea>
+      <textarea id="input" name="input" style="flex: 1;"></textarea>
       <button type="submit" style="flex-shrink: 0; width: 4rem; height: 4rem;">Send</button>
     </div>
   </form>
@@ -78,7 +78,8 @@ app.get("/chat/:currentChatId", (c) => {
           <link rel="icon" href="https://fav.farm/🤖" />
           <title>Agents ${currentChatId}</title>
         </head>
-        <body>`).toString());
+        <body>
+          <main class="container">`).toString());
     await stream.write(newChatButton.toString());
 
     const model = await getModel();
@@ -131,6 +132,7 @@ app.get("/chat/:currentChatId", (c) => {
     }
     await stream.write(await (chatInput.toString()));
     await stream.write(await (html`
+          </main>
         </body>
         </html>
           `.toString()));
