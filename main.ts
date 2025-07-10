@@ -5,6 +5,7 @@ import { initAgents } from "./agents.ts";
 import { ChatModel, Message } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { stringifyYaml } from "./util.ts";
+import { AgentInputItem, user } from "@openai/agents-core";
 const messagePrinterWrapper = (source: Store<Message>) =>
   createProxyStore(source, {
     async put(superPut, ref, data) {
@@ -93,29 +94,49 @@ app.get("/:currentChatId", (c) => {
 
     const model = await getModel();
 
+    let lastMsg: Message | null = null;
     for (const [i, msg] of (await model.get()).entries()) {
       await stream.write(await (html`
               <p id="${i}">
                 <pre>${stringifyYaml([msg])}</pre>
               </p>
             `).toString());
+      lastMsg = msg;
     }
+    if (lastMsg?.type === 'message' && lastMsg.role === 'user') {
+      // make me a lazy func for agents too
+      /*do not await*/ model.llm(agents[0]);
+      let oldWipMsg = '';
+      await stream.write(html`<p id=${(await model.get()).length}><pre>`.toString())
+      while (model.wipMsg !== null) {
+        if (oldWipMsg === model.wipMsg) {
+          await stream.sleep(100);
+          continue; // wait for new message
+        }
+        const newChunk = model.wipMsg.slice(oldWipMsg.length);
 
+      }
+      await stream.write(html`</pre></p>`.toString());
+    }
     await stream.write(await (chatInput.toString()));
     await stream.write(await (html`
         </body>
-      </html>
-    `.toString()));
+        </html>
+          `.toString()));
   });
 });
 
 app.post("/:currentChatId", async (c) => {
   const { currentChatId } = c.req.param();
   const body = await c.req.parseBody();
-  const userInput = (body as Record<string, string | File>)["input"];
+  let userInput = (body as Record<string, string | File>)["input"];
   // reject File for now
   if (typeof userInput !== "string") {
     return c.text("File input is not supported yet", 400);
+  }
+  userInput = userInput.trim();
+  if (userInput.length === 0) {
+    return c.text("Input cannot be empty", 400);
   }
   const model = await getModel();
 
@@ -125,8 +146,7 @@ app.post("/:currentChatId", async (c) => {
     content: userInput.trim(),
   } as AgentInputItem;
   await model.appendMessages([msg]);
-  console.log(userInput);
-  return c.redirect(`/${currentChatId}`);
+  return c.redirect(`/ ${currentChatId}#${(await model.get()).length} `);
 });
 
 export default app;
