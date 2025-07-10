@@ -64,11 +64,29 @@ function startRecordingAndTranscription() {
         };
 
         mediaRecorder.onstop = function () {
-          const audioBlob = new Blob(audioChunks);
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-          audio.play();
-          resolve({ transcript: finalTranscript, audioUrl: audioUrl });
+          console.log("MediaRecorder stopped. Finalizing audio.");
+          if (audioChunks.length === 0) {
+            console.warn("No audio chunks recorded. Cannot create audio blob.");
+            resolve({ transcript: finalTranscript, audioUrl: null });
+            return;
+          }
+          try {
+            const audioBlob = new Blob(audioChunks);
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.onerror = (event) => {
+              console.error("Error playing audio:", event.target.error);
+            };
+            audio.play().catch((error) => {
+              // This might happen due to browser autoplay policies.
+              // It's not a fatal error for the recording process itself.
+              console.warn("Audio playback failed:", error);
+            });
+            resolve({ transcript: finalTranscript, audioUrl: audioUrl });
+          } catch (error) {
+            console.error("Error processing audio:", error);
+            reject("Failed to process recorded audio.");
+          }
         };
 
         // Start audio recording
