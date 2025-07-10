@@ -93,10 +93,10 @@ app.get("/stream", (c) => {
 app.post("/new-chat", async (c) => {
   const model = await getModel();
   const newChatId = await model.chats.newChat();
-  return c.redirect(`/chats/${newChatId}`);
+  return c.redirect(`/chat/${newChatId}`);
 });
 
-app.get("/chats/:currentChatId", (c) => {
+app.get("/chat/:currentChatId", (c) => {
   const { currentChatId } = c.req.param();
   c.header('Content-Type', 'text/html; charset=utf-8');
   return stream(c, async (stream) => {
@@ -154,10 +154,10 @@ app.get("/chats/:currentChatId", (c) => {
 
 app.get("/", async (c) => {
   const model = await getModel();
-  return c.redirect(`/chats/${await model.chats.current()}`);
+  return c.redirect(`/chat/${await model.chats.current()}`);
 });
 
-app.post("/chats/:currentChatId", async (c) => {
+app.post("/chat/:currentChatId", async (c) => {
   const { currentChatId } = c.req.param();
   const body = await c.req.parseBody();
   let userInput = (body as Record<string, string | File>)["input"];
@@ -177,7 +177,7 @@ app.post("/chats/:currentChatId", async (c) => {
     content: userInput.trim(),
   } as AgentInputItem;
   await model.appendMessages([msg], currentChatId);
-  return c.redirect(`/${currentChatId}#${(await model.get(currentChatId)).length}`);
+  return c.redirect(`/chat/${currentChatId}#${(await model.get(currentChatId)).length}`);
 });
 
 export default app;
