@@ -68,9 +68,9 @@ class AudioRecorder {
 
 /**
  * @param {string} [wakePhrase]
- * @returns {Promise<AudioRecorderResult>}
+ * @returns {void}
  */
-async function startRecordingAndTranscription(
+function startRecordingAndTranscription(
   wakePhraseRegex = /ok[^a-z]+metallica/i,
 ) {
   if (!("webkitSpeechRecognition" in window) || !("MediaRecorder" in window)) {
@@ -81,11 +81,9 @@ async function startRecordingAndTranscription(
 
   /** @type { AudioRecorder | undefined} */
   let audioRecorder;
+  let noInterimResultsTimeout;
 
-  return new Promise((resolve, reject) => {
-    let finalTranscript = "";
-    let isSpeechEnded = false;
-    let speechEndTimeout;
+  let finalTranscript = "";
 
     // Initialize the SpeechRecognition object
     /** @type {SpeechRecognition} */
@@ -96,6 +94,8 @@ async function startRecordingAndTranscription(
     // Set up the event listeners for SpeechRecognition
     /** @param {SpeechRecognitionEvent} event */
     recognition.onresult = async function (event) {
+      clearTimeout(noInterimResultsTimeout);
+
       let interimTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
@@ -108,57 +108,59 @@ async function startRecordingAndTranscription(
         "Interim transcript json:",
         JSON.stringify(interimTranscript),
       );
-      if (wakePhraseRegex.test(interimTranscript)) {
+      if (wakePhraseRegex.test(interimTranscript) && !audioRecorder) {
         console.log("Wake phrase detected!");
         audioRecorder = await AudioRecorder.start();
       }
+
+      noInterimResultsTimeout = setTimeout(async () => {
+        if (audioRecorder) {
+          console.log("No interim results for 200ms, stopping recording.");
+          const audioUrl = await audioRecorder.stop();
+          audioRecorder = undefined;
+          if (audioUrl) {
+            const audio = new Audio(audioUrl);
+            audio.onerror = (event) => {
+              console.error("Error playing audio:", event.target.error);
+            };
+            audio.play().catch((error) => {
+              console.warn("Audio playback failed:", error);
+            });
+          }
+        }
+      }, 200);
     };
 
     /** @param {SpeechRecognitionErrorEvent} event */
     recognition.onerror = function (event) {
-      audioRecorder.stop();
-      reject(new Error("Error occurred in recognition: " + event.error));
+      if (audioRecorder) {
+        audioRecorder.stop();
+      }
+      console.error("Error occurred in recognition: " + event.error);
     };
 
-    recognition.onspeechend = async function () {
-      isSpeechEnded = true;
-      console.log("Speech has stopped being detected", audioRecorder);
-      if (audioRecorder) {
-        const audioUrl = await audioRecorder.stop();
-        audioRecorder = undefined;
-        if (audioUrl) {
-          const audio = new Audio(audioUrl);
-          audio.onerror = (event) => {
-            console.error("Error playing audio:", event.target.error);
-          };
-          audio.play().catch((error) => {
-            console.warn("Audio playback failed:", error);
-          });
-        }
-      }
-      // Start a timeout when speech ends
-      /*speechEndTimeout = setTimeout(() => {
-          recognition.stop(); // Stop speech recognition after 5 seconds of silence
-        }, 0);*/
+    recognition.onspeechend = function () {
+      console.log("Speech has stopped being detected");
     };
 
     recognition.onspeechstart = function () {
-      isSpeechEnded = false;
       console.log("Speech has been detected");
-      clearTimeout(speechEndTimeout); // Clear the timeout when speech starts again
+    };
+
+    recognition.onend = function () {
+      console.log("Speech recognition has ended, restarting...");
+      recognition.start();
     };
 
     // Start speech recognition
     recognition.start();
-  });
 }
 
 // Usage
-(async () => {
+(() => {
   try {
-    const { transcript, audioUrl } = await startRecordingAndTranscription();
-    console.log("Final transcript:", transcript);
-    console.log("Audio URL:", audioUrl);
+    startRecordingAndTranscription();
+    console.log("Continuous speech recognition started.");
   } catch (err) {
     console.error("An error occurred:", err);
   }
