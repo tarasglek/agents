@@ -44,17 +44,6 @@ function getModel(): Promise<ChatModel> {
 
 const app = new Hono();
 const chatInput = html`
-  <style>
-  form {
-    width: 20rem;
-    display: flex;
-    flex-direction: column;
-  }
-
-  textarea {
-    field-sizing: content;
-  }
-  </style>
   <form method="POST" action="">
     <label for="input">User</label>
     <textarea id="input" name="input"></textarea>
@@ -82,6 +71,7 @@ app.get("/chat/:currentChatId", (c) => {
       <!DOCTYPE html>
       <html>
         <head>
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
           <link rel="icon" href="https://fav.farm/🤖" />
           <title>Agents ${currentChatId}</title>
         </head>
