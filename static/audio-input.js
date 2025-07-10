@@ -1,4 +1,4 @@
-function startRecordingAndTranscription() {
+function startRecordingAndTranscription(wakePhrase = "ok metallica") {
   return new Promise((resolve, reject) => {
     if (
       !("webkitSpeechRecognition" in window) || !("MediaRecorder" in window)
@@ -10,7 +10,6 @@ function startRecordingAndTranscription() {
     }
 
     let finalTranscript = "";
-    let isSpeechEnded = false;
     let speechEndTimeout = null;
 
     // Initialize the SpeechRecognition object
@@ -29,6 +28,7 @@ function startRecordingAndTranscription() {
         }
       }
       console.log("Interim transcript:", interimTranscript);
+      //regexp match for wake phrase and console log wake phrase detected
     };
 
     recognition.onerror = function (event) {
@@ -39,9 +39,9 @@ function startRecordingAndTranscription() {
       isSpeechEnded = true;
       console.log("Speech has stopped being detected");
       // Start a timeout when speech ends
-      speechEndTimeout = setTimeout(() => {
+      /*speechEndTimeout = setTimeout(() => {
         recognition.stop(); // Stop speech recognition after 5 seconds of silence
-      }, 5000);
+      }, 0);*/
     };
 
     recognition.onspeechstart = function () {
@@ -65,6 +65,7 @@ function startRecordingAndTranscription() {
 
         mediaRecorder.onstop = function () {
           console.log("MediaRecorder stopped. Finalizing audio.");
+          console.log(audioChunks.length, "audio chunks recorded.");
           if (audioChunks.length === 0) {
             console.warn("No audio chunks recorded. Cannot create audio blob.");
             resolve({ transcript: finalTranscript, audioUrl: null });
@@ -94,6 +95,7 @@ function startRecordingAndTranscription() {
 
         // Stop recording when speech recognition stops
         recognition.onend = function () {
+          console.log("Speech recognition ended. Stopping media recorder.");
           mediaRecorder.stop();
         };
       })
