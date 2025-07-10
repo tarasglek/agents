@@ -12,7 +12,7 @@ import {
 import { setOpenAIAPI } from "@openai/agents";
 
 
-export async function initAgents(options: { USE_OPENROUTER: boolean, USE_TRACE: boolean, model?: string }) {
+export async function initAgents(options: { USE_OPENROUTER: boolean, USE_TRACE?: boolean, model?: string }) {
   let openaiPrefix = '';
   if (options.USE_OPENROUTER) {
     openaiPrefix = 'openai/';

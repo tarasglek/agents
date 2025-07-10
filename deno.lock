@@ -1,8 +1,12 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@smallweb/sandbox@0.1.1": "0.1.1",
     "jsr:@std/assert@1": "1.0.13",
     "jsr:@std/cli@*": "1.0.17",
+    "jsr:@std/encoding@1.0.8": "1.0.8",
+    "jsr:@std/html@1.0.3": "1.0.3",
+    "jsr:@std/http@1.0.12": "1.0.12",
     "jsr:@std/internal@^1.0.6": "1.0.9",
     "jsr:@std/json@0.224.0": "0.224.0",
     "jsr:@std/streams@0.224.0": "0.224.0",
@@ -16,6 +20,14 @@
     "npm:zod@^3.25.76": "3.25.76"
   },
   "jsr": {
+    "@smallweb/sandbox@0.1.1": {
+      "integrity": "e90d4f3ca3abbc5b765e29ab90f12cc4e6c8754ec4311bc296ccf6240053f3e6",
+      "dependencies": [
+        "jsr:@std/encoding",
+        "jsr:@std/html",
+        "jsr:@std/http"
+      ]
+    },
     "@std/assert@1.0.13": {
       "integrity": "ae0d31e41919b12c656c742b22522c32fb26ed0cba32975cb0de2a273cb68b29",
       "dependencies": [
@@ -24,6 +36,15 @@
     },
     "@std/cli@1.0.17": {
       "integrity": "e15b9abe629e17be90cc6216327f03a29eae613365f1353837fa749aad29ce7b"
+    },
+    "@std/encoding@1.0.8": {
+      "integrity": "a6c8f3f933ab1bed66244f435d1dc0fd23a888e07195532122ddc3d5f8f0e6b4"
+    },
+    "@std/html@1.0.3": {
+      "integrity": "7a0ac35e050431fb49d44e61c8b8aac1ebd55937e0dc9ec6409aa4bab39a7988"
+    },
+    "@std/http@1.0.12": {
+      "integrity": "85246d8bfe9c8e2538518725b158bdc31f616e0869255f4a8d9e3de919cab2aa"
     },
     "@std/internal@1.0.9": {
       "integrity": "bdfb97f83e4db7a13e8faab26fb1958d1b80cc64366501af78a0aee151696eb8"
