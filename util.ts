@@ -2,5 +2,6 @@ import { stringify } from "jsr:@std/yaml";
 
 export function stringifyYaml(obj: unknown): string {
     // role = "🤖 " + role
-    return stringify(obj, { skipInvalid: true });
+    const yaml = stringify(obj, { skipInvalid: true });
+    return yaml.replace(/(\s*role: )assistant/g, "$1🤖 assistant");
 }
