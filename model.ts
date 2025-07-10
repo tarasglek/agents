@@ -63,19 +63,25 @@ export class ChatModel {
         return ret;
     }
 
-    async appendMessages(messages: Message[]): Promise<void> {
-        if (messages.length === 0) {
-            return;
-        }
-        const currentChatId = await this.chats.current();
-        const currentMessages = await this.messageStore(currentChatId);
-        let maxMsgIndex = await this.chats.getMaxMsgIndex(currentChatId);
+    async nextMsgIndex(chatId: string): Promise<number> {
+        const currentMessages = await this.messageStore(chatId);
+        let maxMsgIndex = await this.chats.getMaxMsgIndex(chatId);
         // chat with maxMsgIndex 0 can point to an empty chat or to a deleted message
         // so check if message exists at that index 
         const slotOccupied = !!await currentMessages.get(maxMsgIndex.toString());
         if (slotOccupied) {
             maxMsgIndex++;
         }
+        return maxMsgIndex;
+    }
+
+    async appendMessages(messages: Message[]): Promise<void> {
+        if (messages.length === 0) {
+            return;
+        }
+        const currentChatId = await this.chats.current();
+        const currentMessages = await this.messageStore(currentChatId);
+        let maxMsgIndex = await this.nextMsgIndex(currentChatId);
         for (const msg of messages) {
             await currentMessages.put(maxMsgIndex.toString(), msg);
             await this.chats.put(currentChatId, maxMsgIndex);
