@@ -117,7 +117,7 @@ app.get("/:currentChatId", (c) => {
       const agents = await getAgents();
       /*do not await*/ model.llm(agents[0]);
       let oldWipMsg = '';
-      await stream.write(html`<p id=${(await model.get()).length}><pre>`.toString())
+      await stream.write(html`<p id=${(await model.get()).length} style="min-height: 50vh;"><pre>`.toString())
       while (model.wipMsg !== null) {
         if (oldWipMsg === model.wipMsg) {
           await stream.sleep(1000 / 60); // 60 FPS
