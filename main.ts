@@ -157,7 +157,7 @@ app.post("/:currentChatId", async (c) => {
     content: userInput.trim(),
   } as AgentInputItem;
   await model.appendMessages([msg]);
-  return c.redirect(`/ ${currentChatId}#${(await model.get()).length} `);
+  return c.redirect(`/${currentChatId}#${(await model.get()).length}`);
 });
 
 export default app;
