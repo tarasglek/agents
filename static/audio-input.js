@@ -1,9 +1,24 @@
+/**
+ * @typedef {object} AudioRecorderResult
+ * @property {string} transcript
+ * @property {string | null} audioUrl
+ */
+
 class AudioRecorder {
+  /**
+   * @param {MediaRecorder} mediaRecorder
+   * @param {Blob[]} audioChunks
+   */
   constructor(mediaRecorder, audioChunks) {
+    /** @type {MediaRecorder} */
     this.mediaRecorder = mediaRecorder;
+    /** @type {Blob[]} */
     this.audioChunks = audioChunks;
   }
 
+  /**
+   * @returns {Promise<AudioRecorder>}
+   */
   static async start() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -24,6 +39,9 @@ class AudioRecorder {
     }
   }
 
+  /**
+   * @returns {Promise<string | null>}
+   */
   stop() {
     return new Promise((resolve, reject) => {
       this.mediaRecorder.onstop = () => {
@@ -48,6 +66,10 @@ class AudioRecorder {
   }
 }
 
+/**
+ * @param {string} [wakePhrase]
+ * @returns {Promise<AudioRecorderResult>}
+ */
 async function startRecordingAndTranscription(wakePhrase = "ok metallica") {
   if (!("webkitSpeechRecognition" in window) || !("MediaRecorder" in window)) {
     throw new Error(
@@ -61,11 +83,13 @@ async function startRecordingAndTranscription(wakePhrase = "ok metallica") {
     const wakePhraseRegex = new RegExp(wakePhrase, "i");
 
     // Initialize the SpeechRecognition object
+    /** @type {SpeechRecognition} */
     const recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
 
     // Set up the event listeners for SpeechRecognition
+    /** @param {SpeechRecognitionEvent} event */
     recognition.onresult = function (event) {
       let interimTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -85,6 +109,7 @@ async function startRecordingAndTranscription(wakePhrase = "ok metallica") {
       }
     };
 
+    /** @param {SpeechRecognitionErrorEvent} event */
     recognition.onerror = function (event) {
       throw new Error("Error occurred in recognition: " + event.error);
     };
