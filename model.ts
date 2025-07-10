@@ -45,6 +45,8 @@ export class Chats extends ProxyStore<Chat> {
 
 export class ChatModel {
     public agents: Agent[] = [];
+    public wipMsg: string | null = null;
+
     constructor(public chats: Chats, private allMessages: Store<Message>) { }
 
     async get(): Promise<Message[]> {
@@ -77,6 +79,7 @@ export class ChatModel {
         for (const msg of messages) {
             await currentMessages.put(maxMsgIndex.toString(), msg);
             await this.chats.put(currentChatId, maxMsgIndex);
+            maxMsgIndex++;
         }
     }
 
@@ -104,7 +107,11 @@ export class ChatModel {
         let historyLength = msgsBeforeAI.length;
         for await (const event of stream) {
             if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
-                process.stdout.write(event.data.delta);
+                if (!this.wipMsg) {
+                    this.wipMsg = event.data.delta;
+                } else {
+                    this.wipMsg += event.data.delta;
+                }
             }
             if (historyLength < stream.history.length) {
                 const newMessages = stream.history.slice(historyLength);
@@ -113,10 +120,10 @@ export class ChatModel {
             }
         }
         await stream.completed;
-        console.log(""); // add a newline before reprinting stuff
         const newMessages = stream.history.slice(historyLength);
         // shouldn't have new messages here cos they should all appear during streaming
         await this.appendMessages(newMessages);
+        this.wipMsg = null; // reset wip message after LLM call
     }
 
     static async init(filename: string, agents: Agent[], listener: (source: Store<Message>) => Store<Message>) {
