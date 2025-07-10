@@ -4,6 +4,15 @@
  * @property {string | null} audioUrl
  */
 
+let lastLogTime = Date.now();
+/** @param {string} message */
+function log(message) {
+  const now = Date.now();
+  const diff = now - lastLogTime;
+  lastLogTime = now;
+  console.log(`+${diff}ms ${message}`);
+}
+
 class AudioRecorder {
   /**
    * @param {MediaRecorder} mediaRecorder
@@ -30,7 +39,7 @@ class AudioRecorder {
       };
 
       mediaRecorder.start();
-      console.log("Audio recording started.");
+      log("Audio recording started.");
 
       return new AudioRecorder(mediaRecorder, audioChunks);
     } catch (err) {
@@ -45,7 +54,7 @@ class AudioRecorder {
   stop() {
     return new Promise((resolve, reject) => {
       this.mediaRecorder.onstop = () => {
-        console.log("MediaRecorder stopped. Finalizing audio.");
+        log("MediaRecorder stopped. Finalizing audio.");
         if (this.audioChunks.length === 0) {
           console.warn("No audio chunks recorded. Cannot create audio blob.");
           resolve(null);
@@ -102,20 +111,19 @@ function startRecordingAndTranscription(
         interimTranscript += event.results[i][0].transcript;
       }
     }
-    console.log(
-      "Interim transcript json:",
-      JSON.stringify(interimTranscript),
+    log(
+      `Interim transcript json: ${JSON.stringify(interimTranscript)}`,
     );
     if (wakePhraseRegex.test(interimTranscript) && !audioRecorder) {
-      console.log("Wake phrase detected!");
+      log("Wake phrase detected!");
       audioRecorder = await AudioRecorder.start();
     }
     const TIMEOUT = 1000;
     if (audioRecorder) {
       clearTimeout(noInterimResultsTimeout);
-      console.log("[re]-set noInterimResultsTimeout");
+      log("[re]-set noInterimResultsTimeout");
       noInterimResultsTimeout = setTimeout(async () => {
-        console.log(`No interim results for ${TIMEOUT}ms, stopping recording.`);
+        log(`No interim results for ${TIMEOUT}ms, stopping recording.`);
         const audioUrl = await audioRecorder.stop();
         audioRecorder = undefined;
         if (audioUrl) {
@@ -140,15 +148,15 @@ function startRecordingAndTranscription(
   };
 
   recognition.onspeechend = function () {
-    console.log("Speech has stopped being detected");
+    log("Speech has stopped being detected");
   };
 
   recognition.onspeechstart = function () {
-    console.log("Speech has been detected");
+    log("Speech has been detected");
   };
 
   recognition.onend = function () {
-    console.log("Speech recognition has ended, restarting...");
+    log("Speech recognition has ended, restarting...");
     recognition.start();
   };
 
@@ -160,7 +168,7 @@ function startRecordingAndTranscription(
 (() => {
   try {
     startRecordingAndTranscription();
-    console.log("Continuous speech recognition started.");
+    log("Continuous speech recognition started.");
   } catch (err) {
     console.error("An error occurred:", err);
   }
