@@ -108,4 +108,10 @@ app.get("/:currentChatId", (c) => {
     });
 });
 
+app.post("/:currentChatId", async (c) => {
+    const { currentChatId } = c.req.param();
+    // TODO: do something with the post body
+    return c.redirect(`/${currentChatId}`);
+});
+
 export default app;
