@@ -45,9 +45,10 @@ const chatInput = html`
     field-sizing: content;
   }
   </style>
-  <form>
+  <form method="POST" action="">
     <label for="input">User</label>
-    <textarea id="input"></textarea>
+    <textarea id="input" name="input"></textarea>
+    <button type="submit">Send</button>
   </form>
 `;
 app.get("/", async (c) => {
