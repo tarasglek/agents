@@ -6,9 +6,9 @@
 
 <body>
     <script>
-        const str = `<script src="./audio-input.js?${Date.now()}"></script>`;
-    console.log(str);
-    document.write(str);
+        const script = document.createElement('script');
+        script.src = `./audio-input.js?${Date.now()}`;
+        document.body.appendChild(script);
     </script>
 </body>
 
