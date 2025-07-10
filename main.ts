@@ -46,8 +46,10 @@ const app = new Hono();
 const chatInput = html`
   <form method="POST" action="">
     <label for="input">User</label>
-    <textarea id="input" name="input"></textarea>
-    <button type="submit">Send</button>
+    <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+      <textarea id="input" name="input" style="flex-grow: 1;"></textarea>
+      <button type="submit" style="flex-shrink: 0; width: 4rem; height: 4rem;">Send</button>
+    </div>
   </form>
 `;
 
