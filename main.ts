@@ -120,7 +120,7 @@ app.get("/:currentChatId", (c) => {
       let oldWipMsg = '';
       // so that the screen doesn't jump around
       // 50vh = 50% of viewport height
-      await stream.write(html`<p><a name="${(await model.get()).length}"></a><pre  style="min-height: 50vh;">`.toString())
+      await stream.write(html`<p><a name="${(await model.get()).length}" tabindex="-1" autofocus></a><pre  style="min-height: 50vh;">`.toString())
       while (model.wipMsg !== null) {
         if (oldWipMsg === model.wipMsg) {
           await stream.sleep(1000 / 60); // 60 FPS
@@ -160,7 +160,7 @@ app.post("/:currentChatId", async (c) => {
     content: userInput.trim(),
   } as AgentInputItem;
   await model.appendMessages([msg]);
-  return c.redirect(`/${currentChatId}#${(await model.get()).length - 1}`);
+  return c.redirect(`/${currentChatId}#${(await model.get()).length}`);
 });
 
 export default app;
