@@ -5,7 +5,11 @@
 </head>
 
 <body>
-    <script src="./audio-input.js"></script>
+    <script>
+        const str = `<script src="./audio-input.js?${Date.now()}"></script>`;
+    console.log(str);
+    document.write(str);
+    </script>
 </body>
 
 </html>
