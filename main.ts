@@ -78,21 +78,21 @@ app.get("/:currentChatId", (c) => {
           <link rel="icon" href="https://fav.farm/🤖" />
           <title>Agents ${currentChatId}</title>
         </head>
-        <body>`));
+        <body>`).toString());
 
         for (const msg of await model.get()) {
             await stream.write(await (html`
               <p>
                 <pre>${stringifyYaml([msg])}</pre>
               </p>
-            `));
+            `).toString());
         }
 
-        await stream.write(await chatInput);
+        await stream.write(await (chatInput.toString()));
         await stream.write(await (html`
         </body>
       </html>
-    `));
+    `.toString()));
     });
 });
 
