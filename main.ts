@@ -93,10 +93,10 @@ app.get("/stream", (c) => {
 app.post("/new-chat", async (c) => {
   const model = await getModel();
   const newChatId = await model.chats.newChat();
-  return c.redirect(`/${newChatId}`);
+  return c.redirect(`/chats/${newChatId}`);
 });
 
-app.get("/:currentChatId", (c) => {
+app.get("/chats/:currentChatId", (c) => {
   const { currentChatId } = c.req.param();
   c.header('Content-Type', 'text/html; charset=utf-8');
   return stream(c, async (stream) => {
@@ -154,10 +154,10 @@ app.get("/:currentChatId", (c) => {
 
 app.get("/", async (c) => {
   const model = await getModel();
-  return c.redirect(`/${await model.chats.current()}`);
+  return c.redirect(`/chats/${await model.chats.current()}`);
 });
 
-app.post("/:currentChatId", async (c) => {
+app.post("/chats/:currentChatId", async (c) => {
   const { currentChatId } = c.req.param();
   const body = await c.req.parseBody();
   let userInput = (body as Record<string, string | File>)["input"];
