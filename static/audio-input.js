@@ -1,15 +1,61 @@
-function startRecordingAndTranscription(wakePhrase = "ok metallica") {
-  return new Promise((resolve, reject) => {
-    if (
-      !("webkitSpeechRecognition" in window) || !("MediaRecorder" in window)
-    ) {
-      reject(
-        "SpeechRecognition or MediaRecorder not supported in this browser.",
-      );
-      return;
-    }
+class AudioRecorder {
+  constructor(mediaRecorder, audioChunks) {
+    this.mediaRecorder = mediaRecorder;
+    this.audioChunks = audioChunks;
+  }
 
-    let finalTranscript = "";
+  static async start() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.start();
+      console.log("Audio recording started.");
+
+      return new AudioRecorder(mediaRecorder, audioChunks);
+    } catch (err) {
+      console.error("Could not start audio recording:", err);
+      throw new Error("Could not get user media: " + err);
+    }
+  }
+
+  stop() {
+    return new Promise((resolve, reject) => {
+      this.mediaRecorder.onstop = () => {
+        console.log("MediaRecorder stopped. Finalizing audio.");
+        if (this.audioChunks.length === 0) {
+          console.warn("No audio chunks recorded. Cannot create audio blob.");
+          resolve(null);
+          return;
+        }
+        try {
+          const audioBlob = new Blob(this.audioChunks);
+          const audioUrl = URL.createObjectURL(audioBlob);
+          resolve(audioUrl);
+        } catch (error) {
+          console.error("Error processing audio:", error);
+          reject("Failed to process recorded audio.");
+        }
+      };
+
+      this.mediaRecorder.stop();
+    });
+  }
+}
+
+async function startRecordingAndTranscription(wakePhrase = "ok metallica") {
+  if (!("webkitSpeechRecognition" in window) || !("MediaRecorder" in window)) {
+    throw new Error(
+      "SpeechRecognition or MediaRecorder not supported in this browser.",
+    );
+  }
+
+  let finalTranscript = "";
     let speechEndTimeout = null;
     let wakePhraseDetected = false;
     const wakePhraseRegex = new RegExp(wakePhrase, "i");
@@ -40,7 +86,7 @@ function startRecordingAndTranscription(wakePhrase = "ok metallica") {
     };
 
     recognition.onerror = function (event) {
-      reject("Error occurred in recognition: " + event.error);
+      throw new Error("Error occurred in recognition: " + event.error);
     };
 
     recognition.onspeechend = function () {
@@ -58,65 +104,36 @@ function startRecordingAndTranscription(wakePhrase = "ok metallica") {
       clearTimeout(speechEndTimeout); // Clear the timeout when speech starts again
     };
 
+    const audioRecorder = await AudioRecorder.start();
+
+    recognition.onend = async () => {
+      console.log("Speech recognition ended. Stopping media recorder.");
+      const audioUrl = await audioRecorder.stop();
+
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.onerror = (event) => {
+          console.error("Error playing audio:", event.target.error);
+        };
+        audio.play().catch((error) => {
+          console.warn("Audio playback failed:", error);
+        });
+      }
+
+      return { transcript: finalTranscript, audioUrl: audioUrl };
+    };
+
     // Start speech recognition
     recognition.start();
-
-    // Set up audio recording
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(function (stream) {
-        const mediaRecorder = new MediaRecorder(stream);
-        const audioChunks = [];
-
-        mediaRecorder.ondataavailable = function (event) {
-          audioChunks.push(event.data);
-        };
-
-        mediaRecorder.onstop = function () {
-          console.log("MediaRecorder stopped. Finalizing audio.");
-          console.log(audioChunks.length, "audio chunks recorded.");
-          if (audioChunks.length === 0) {
-            console.warn("No audio chunks recorded. Cannot create audio blob.");
-            resolve({ transcript: finalTranscript, audioUrl: null });
-            return;
-          }
-          try {
-            const audioBlob = new Blob(audioChunks);
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-            audio.onerror = (event) => {
-              console.error("Error playing audio:", event.target.error);
-            };
-            audio.play().catch((error) => {
-              // This might happen due to browser autoplay policies.
-              // It's not a fatal error for the recording process itself.
-              console.warn("Audio playback failed:", error);
-            });
-            resolve({ transcript: finalTranscript, audioUrl: audioUrl });
-          } catch (error) {
-            console.error("Error processing audio:", error);
-            reject("Failed to process recorded audio.");
-          }
-        };
-
-        // Start audio recording
-        mediaRecorder.start();
-
-        // Stop recording when speech recognition stops
-        recognition.onend = function () {
-          console.log("Speech recognition ended. Stopping media recorder.");
-          mediaRecorder.stop();
-        };
-      })
-      .catch(function (err) {
-        reject("Could not get user media: " + err);
-      });
-  });
 }
 
 // Usage
-startRecordingAndTranscription().then(({ transcript, audioUrl }) => {
-  console.log("Final transcript:", transcript);
-  console.log("Audio URL:", audioUrl);
-}).catch((error) => {
-  console.error("An error occurred:", error);
-});
+(async () => {
+  try {
+    const { transcript, audioUrl } = await startRecordingAndTranscription();
+    console.log("Final transcript:", transcript);
+    console.log("Audio URL:", audioUrl);
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+})();
