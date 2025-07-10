@@ -13,15 +13,24 @@ const messagePrinterWrapper = (source: Store<Message>) =>
         },
     });
 
-const agents = await initAgents({
-    USE_OPENROUTER: !!Deno.env.get("OPENROUTER_API_KEY"),
-    USE_TRACE: false,
-});
-const model = await ChatModel.init(
-    "history.jsonl",
-    agents,
-    messagePrinterWrapper,
-);
+let modelPromise: Promise<ChatModel> | null = null;
+function getModel(): Promise<ChatModel> {
+    if (modelPromise) {
+        return modelPromise;
+    }
+    modelPromise = (async () => {
+        const agents = await initAgents({
+            USE_OPENROUTER: !!Deno.env.get("OPENROUTER_API_KEY"),
+            USE_TRACE: false,
+        });
+        return await ChatModel.init(
+            "history.jsonl",
+            agents,
+            messagePrinterWrapper,
+        );
+    })();
+    return modelPromise;
+}
 
 const app = new Hono();
 const chatInput = html`
@@ -42,6 +51,7 @@ const chatInput = html`
   </form>
 `;
 app.get("/", async (c) => {
+    const model = await getModel();
     return c.redirect(`/${await model.chats.current()}`);
 });
 
@@ -71,6 +81,7 @@ app.get("/:currentChatId", (c) => {
     const { currentChatId } = c.req.param();
     c.header('Content-Type', 'text/html; charset=utf-8');
     return stream(c, async (stream) => {
+        const model = await getModel();
         await stream.write(await (html`
       <!DOCTYPE html>
       <html>
