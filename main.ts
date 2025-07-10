@@ -113,7 +113,7 @@ app.get("/:currentChatId", (c) => {
     const model = await getModel();
 
     let lastMsg: Message | null = null;
-    for (const [i, msg] of (await model.get()).entries()) {
+    for (const [i, msg] of (await model.get(currentChatId)).entries()) {
       await stream.write(await (html`
               <p>
                 <a name="${i}"></a>
@@ -125,14 +125,14 @@ app.get("/:currentChatId", (c) => {
     if (lastMsg?.type === 'message' && lastMsg.role === 'user') {
       // make me a lazy func for agents too
       const agents = await getAgents();
-      /*do not await*/ model.llm(agents[0]);
+      /*do not await*/ model.llm(agents[0], currentChatId);
       let oldWipMsg = '';
       // Trick to scroll to the new message as it streams:
       // An anchor tag with `autofocus` will be scrolled into view by the browser.
       // `tabindex="-1"` makes the anchor focusable without being in the tab order.
       // The `min-height: 90vh` (90% of viewport height) on the <pre> prevents the
       // layout from jumping around as the content streams in.
-      await stream.write(html`<p><a name="${(await model.get()).length}" tabindex="-1" autofocus></a><pre  style="min-height: 90vh;">`.toString())
+      await stream.write(html`<p><a name="${(await model.get(currentChatId)).length}" tabindex="-1" autofocus></a><pre  style="min-height: 90vh;">`.toString())
       while (model.wipMsg !== null) {
         if (oldWipMsg === model.wipMsg) {
           await stream.sleep(1000 / 60); // 60 FPS
@@ -176,8 +176,8 @@ app.post("/:currentChatId", async (c) => {
     role: "user",
     content: userInput.trim(),
   } as AgentInputItem;
-  await model.appendMessages([msg]);
-  return c.redirect(`/${currentChatId}#${(await model.get()).length}`);
+  await model.appendMessages([msg], currentChatId);
+  return c.redirect(`/${currentChatId}#${(await model.get(currentChatId)).length}`);
 });
 
 export default app;

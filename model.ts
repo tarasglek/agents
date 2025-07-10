@@ -49,8 +49,8 @@ export class ChatModel {
 
     constructor(public chats: Chats, private allMessages: Store<Message>) { }
 
-    async get(): Promise<Message[]> {
-        const currentChatId = await this.chats.current();
+    async get(chatId?: string): Promise<Message[]> {
+        const currentChatId = chatId ?? await this.chats.current();
         const maxMsgIndex = (await this.chats.getMaxMsgIndex(currentChatId));
         const currentMessages = await this.messageStore(currentChatId);
         const ret = [] as Message[];
@@ -75,11 +75,11 @@ export class ChatModel {
         return maxMsgIndex;
     }
 
-    async appendMessages(messages: Message[]): Promise<void> {
+    async appendMessages(messages: Message[], chatId?: string): Promise<void> {
         if (messages.length === 0) {
             return;
         }
-        const currentChatId = await this.chats.current();
+        const currentChatId = chatId ?? await this.chats.current();
         const currentMessages = await this.messageStore(currentChatId);
         let maxMsgIndex = await this.nextMsgIndex(currentChatId);
         for (const msg of messages) {
@@ -93,8 +93,8 @@ export class ChatModel {
         return await new RelativeStore<Message>(this.allMessages, chatId);
     }
 
-    async deleteLastMessage(): Promise<Message | null> {
-        const currentChatId = await this.chats.current();
+    async deleteLastMessage(chatId?: string): Promise<Message | null> {
+        const currentChatId = chatId ?? await this.chats.current();
         let maxMsgIndex = await this.chats.getMaxMsgIndex(currentChatId);
         const msgIdKey = maxMsgIndex.toString();
         const currentMessages = await this.messageStore(currentChatId);
@@ -105,12 +105,12 @@ export class ChatModel {
         return ret
     }
 
-    async llm(currentAgent: Agent) {
+    async llm(currentAgent: Agent, chatId?: string) {
         if (this.wipMsg !== null) {
             throw new Error("Cannot start LLM call while another WIP one");
         }
         this.wipMsg = "";
-        const msgsBeforeAI = await this.get();
+        const msgsBeforeAI = await this.get(chatId);
         const stream = await run(currentAgent, msgsBeforeAI, {
             stream: true,
         });
@@ -122,13 +122,13 @@ export class ChatModel {
             if (historyLength < stream.history.length) {
                 const newMessages = stream.history.slice(historyLength);
                 historyLength += newMessages.length;
-                await this.appendMessages(newMessages);
+                await this.appendMessages(newMessages, chatId);
             }
         }
         await stream.completed;
         const newMessages = stream.history.slice(historyLength);
         // shouldn't have new messages here cos they should all appear during streaming
-        await this.appendMessages(newMessages);
+        await this.appendMessages(newMessages, chatId);
         this.wipMsg = null; // reset wip message after LLM call
     }
 
