@@ -68,28 +68,6 @@ const newChatButton = html`
   </form>
 `;
 
-app.get("/stream", (c) => {
-  c.header('Content-Type', 'text/html; charset=utf-8');
-  return stream(c, async (stream) => {
-    // Send initial HTML shell
-    await stream.write(`<!DOCTYPE html><html><body>`);
-    await stream.writeln(`<h1>Start Streaming</h1>`);
-
-    // Simulate a delayed fetch (e.g. DB/API)
-    await stream.sleep(500);
-    await stream.writeln(`<p>Step 1 completed</p>`);
-
-    await stream.sleep(500);
-    await stream.writeln(`<p>Step 2 completed</p>`);
-
-    await stream.sleep(500);
-    await stream.writeln(`<p>All done!</p>`);
-
-    // Close HTML
-    await stream.write(`</body></html>`);
-  });
-});
-
 app.post("/new-chat", async (c) => {
   const model = await getModel();
   const newChatId = await model.chats.newChat();
@@ -116,10 +94,10 @@ app.get("/chat/:currentChatId", (c) => {
     const oldMessages = await model.get(currentChatId)
     for (const [i, msg] of (oldMessages).entries()) {
       await stream.write(await (html`
-              <p>
+              <div>
                 <a name="${i}"></a>
                 <pre>${stringifyYaml([msg])}</pre>
-              </p>
+      </div>
             `).toString());
       lastMsg = msg;
     }
@@ -133,7 +111,7 @@ app.get("/chat/:currentChatId", (c) => {
       // `tabindex="-1"` makes the anchor focusable without being in the tab order.
       // The `min-height: 90vh` (90% of viewport height) on the <pre> prevents the
       // layout from jumping around as the content streams in.
-      await stream.write(html`<p id="msgWip"><a name="${(await model.get(currentChatId)).length}" tabindex="-1" autofocus></a><pre  style="min-height: 90vh;">`.toString())
+      await stream.write(html`<div id="msgWip"><a name="${(await model.get(currentChatId)).length}" tabindex="-1" autofocus></a><pre  style="min-height: 90vh;">`.toString())
       while (model.wipMsg !== null) {
         if (oldWipMsg === model.wipMsg) {
           await stream.sleep(1000 / 60); // 60 FPS
@@ -143,7 +121,7 @@ app.get("/chat/:currentChatId", (c) => {
         await stream.write(html`${newChunk}`.toString());
         oldWipMsg = model.wipMsg;
       }
-      await stream.write(html`</pre></p>`.toString());
+      await stream.write("\n" + html`</pre></div>`.toString());
       await promise; // wait for the LLM call to finish
       // emit some css to hide the wip message completely
       await stream.write(html`<style>#msgWip { display: none;  }</style>`.toString());
@@ -151,10 +129,10 @@ app.get("/chat/:currentChatId", (c) => {
       const completedMessages = (await model.get(currentChatId)).slice(oldMessages.length);
       for (const [i, msg] of completedMessages.entries()) {
         await stream.write(await (html`
-              <p>
+              <div>
                 <a name="${i + oldMessages.length}"></a>
                 <pre>${stringifyYaml([msg])}</pre>
-              </p>
+        </div>
             `).toString());
       }
     }
