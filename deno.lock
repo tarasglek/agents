@@ -1,49 +1,53 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@smallweb/sandbox@0.1.1": "0.1.1",
     "jsr:@std/assert@1": "1.0.13",
-    "jsr:@std/encoding@1.0.8": "1.0.8",
-    "jsr:@std/html@1.0.3": "1.0.3",
-    "jsr:@std/http@1.0.12": "1.0.12",
+    "jsr:@std/cli@*": "1.0.17",
     "jsr:@std/internal@^1.0.6": "1.0.9",
+    "jsr:@std/json@0.224.0": "0.224.0",
+    "jsr:@std/streams@0.224.0": "0.224.0",
+    "jsr:@std/yaml@*": "1.0.5",
     "jsr:@tarasglek/fetch-proxy-curl-logger@^0.0.9": "0.0.9",
-    "npm:@openai/agents@^0.0.10": "0.0.10",
+    "npm:@openai/agents-core@^0.0.10": "0.0.10_zod@3.25.76",
+    "npm:@openai/agents-extensions@^0.0.10": "0.0.10_@openai+agents@0.0.10__zod@3.25.76_ws@8.18.3_zod@3.25.76",
+    "npm:@openai/agents@^0.0.10": "0.0.10_zod@3.25.76",
     "npm:hono@^4.8.4": "4.8.4",
-    "npm:openai@5.8.2": "5.8.2_ws@8.18.3_zod@3.25.76"
+    "npm:openai@5.8.2": "5.8.2_zod@3.25.76_ws@8.18.3",
+    "npm:zod@^3.25.76": "3.25.76"
   },
   "jsr": {
-    "@smallweb/sandbox@0.1.1": {
-      "integrity": "e90d4f3ca3abbc5b765e29ab90f12cc4e6c8754ec4311bc296ccf6240053f3e6",
-      "dependencies": [
-        "jsr:@std/encoding",
-        "jsr:@std/html",
-        "jsr:@std/http"
-      ]
-    },
     "@std/assert@1.0.13": {
       "integrity": "ae0d31e41919b12c656c742b22522c32fb26ed0cba32975cb0de2a273cb68b29",
       "dependencies": [
         "jsr:@std/internal"
       ]
     },
-    "@std/encoding@1.0.8": {
-      "integrity": "a6c8f3f933ab1bed66244f435d1dc0fd23a888e07195532122ddc3d5f8f0e6b4"
-    },
-    "@std/html@1.0.3": {
-      "integrity": "7a0ac35e050431fb49d44e61c8b8aac1ebd55937e0dc9ec6409aa4bab39a7988"
-    },
-    "@std/http@1.0.12": {
-      "integrity": "85246d8bfe9c8e2538518725b158bdc31f616e0869255f4a8d9e3de919cab2aa"
+    "@std/cli@1.0.17": {
+      "integrity": "e15b9abe629e17be90cc6216327f03a29eae613365f1353837fa749aad29ce7b"
     },
     "@std/internal@1.0.9": {
       "integrity": "bdfb97f83e4db7a13e8faab26fb1958d1b80cc64366501af78a0aee151696eb8"
+    },
+    "@std/json@0.224.0": {
+      "integrity": "b7d38d8a8729f9a4074d04a626084825a498db0d385cbc41ad29bce9f8ca01dc"
+    },
+    "@std/streams@0.224.0": {
+      "integrity": "9c21feb45113abfc67dd536029624d1792d56dfbb029b8c1baf4ad5a2c35769e"
+    },
+    "@std/yaml@1.0.5": {
+      "integrity": "71ba3d334305ee2149391931508b2c293a8490f94a337eef3a09cade1a2a2742"
     },
     "@tarasglek/fetch-proxy-curl-logger@0.0.9": {
       "integrity": "ed2be06fc2c8f0bbf6f53eac861caf2fe89f157a0108bcf58ccf81bff3de5031"
     }
   },
   "npm": {
+    "@ai-sdk/provider@1.1.3": {
+      "integrity": "sha512-qZMxYJ0qqX/RfnuIaab+zp8UAeJn/ygXXAffR5I4N0n1IrvA6qBsjc8hXLmBiMV2zoXlifkacF7sEFnYnjBcqg==",
+      "dependencies": [
+        "json-schema"
+      ]
+    },
     "@modelcontextprotocol/sdk@1.15.0_express@5.1.0_zod@3.25.76": {
       "integrity": "sha512-67hnl/ROKdb03Vuu0YOr+baKTvf1/5YBHBm9KnZdjdAh8hjt4FRCPD5ucwxGB237sBpzlqQsLy1PFu7z/ekZ9Q==",
       "dependencies": [
@@ -91,6 +95,17 @@
         "zod"
       ]
     },
+    "@openai/agents-extensions@0.0.10_@openai+agents@0.0.10__zod@3.25.76_ws@8.18.3_zod@3.25.76": {
+      "integrity": "sha512-ilsrB7pnGId1HmnUNvL60Y/qV0kFFLaZbWJ/YlGQL0zUPuUvolnlSRDatVgU+0ba4jy5b96U+hPDV4qWFIYokw==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@openai/agents@0.0.10_zod@3.25.76_ws@8.18.3",
+        "@openai/zod@npm:zod@3.25.76",
+        "@types/ws",
+        "debug",
+        "ws"
+      ]
+    },
     "@openai/agents-openai@0.0.10_zod@3.25.76": {
       "integrity": "sha512-Vq4b0wjWcEljVz4xLYhA9Q722+1NecWiT+u0xFKzVfcvATgkhyIXQ0XoNTNhjM/k3JgtyuIhfcI8pDdU0HDBfw==",
       "dependencies": [
@@ -100,7 +115,16 @@
         "openai@5.8.2_zod@3.25.76_ws@8.18.3"
       ]
     },
-    "@openai/agents-realtime@0.0.10_ws@8.18.3": {
+    "@openai/agents-openai@0.0.10_zod@3.25.76_ws@8.18.3": {
+      "integrity": "sha512-Vq4b0wjWcEljVz4xLYhA9Q722+1NecWiT+u0xFKzVfcvATgkhyIXQ0XoNTNhjM/k3JgtyuIhfcI8pDdU0HDBfw==",
+      "dependencies": [
+        "@openai/agents-core@0.0.10_zod@3.25.76_ws@8.18.3",
+        "@openai/zod@npm:zod@3.25.76",
+        "debug",
+        "openai@5.8.2_ws@8.18.3_zod@3.25.76"
+      ]
+    },
+    "@openai/agents-realtime@0.0.10_zod@3.25.76_ws@8.18.3": {
       "integrity": "sha512-7ZgDWnVC3j9sk5vXv1xAwGHDW+v3p1Zh6kkpEdE+3ZIFVx+6xXHLa0DdOvxTQReEnfIekGpgTt4UT5XqEW9TWQ==",
       "dependencies": [
         "@openai/agents-core@0.0.10_zod@3.25.76_ws@8.18.3",
@@ -110,11 +134,21 @@
         "ws"
       ]
     },
-    "@openai/agents@0.0.10": {
+    "@openai/agents@0.0.10_zod@3.25.76": {
       "integrity": "sha512-HIjQQSaZRceSDnraZGIjAW9x3fH1peHUbtidvKsLCGZgdowhE5HKX4OCbc+SHG8H3ajH/3ZJ43bZ7lNWe5+pAw==",
       "dependencies": [
         "@openai/agents-core@0.0.10_zod@3.25.76",
-        "@openai/agents-openai",
+        "@openai/agents-openai@0.0.10_zod@3.25.76",
+        "@openai/agents-realtime",
+        "debug",
+        "openai@5.8.2_zod@3.25.76_ws@8.18.3"
+      ]
+    },
+    "@openai/agents@0.0.10_zod@3.25.76_ws@8.18.3": {
+      "integrity": "sha512-HIjQQSaZRceSDnraZGIjAW9x3fH1peHUbtidvKsLCGZgdowhE5HKX4OCbc+SHG8H3ajH/3ZJ43bZ7lNWe5+pAw==",
+      "dependencies": [
+        "@openai/agents-core@0.0.10_zod@3.25.76_ws@8.18.3",
+        "@openai/agents-openai@0.0.10_zod@3.25.76_ws@8.18.3",
         "@openai/agents-realtime",
         "debug",
         "openai@5.8.2_ws@8.18.3_zod@3.25.76"
@@ -391,6 +425,9 @@
     "json-schema-traverse@0.4.1": {
       "integrity": "sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg=="
     },
+    "json-schema@0.4.0": {
+      "integrity": "sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA=="
+    },
     "math-intrinsics@1.1.0": {
       "integrity": "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g=="
     },
@@ -645,9 +682,12 @@
     "dependencies": [
       "jsr:@std/assert@1",
       "jsr:@tarasglek/fetch-proxy-curl-logger@^0.0.9",
+      "npm:@openai/agents-core@^0.0.10",
+      "npm:@openai/agents-extensions@^0.0.10",
       "npm:@openai/agents@^0.0.10",
       "npm:hono@^4.8.4",
-      "npm:openai@5.8.2"
+      "npm:openai@5.8.2",
+      "npm:zod@^3.25.76"
     ]
   }
 }

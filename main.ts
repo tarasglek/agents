@@ -15,16 +15,33 @@ const agents = await initAgents({ USE_OPENROUTER: false, USE_TRACE: false });
 const model = await ChatModel.init("history.jsonl", agents, messagePrinterWrapper);
 
 const app = new Hono()
+const chatInput = html`
+<style>
+    form {
+  width: 20rem;
+  display: flex;
+  flex-direction: column;
+}
 
-app.get('/', (c) => {
-    return c.redirect(`/${crypto.randomUUID()}`)
+textarea {
+  field-sizing: content;
+}
+</style>
+<form>
+  <label for="comments">Comments</label>
+  <textarea id="comments"></textarea>
+</form>
+`;
+app.get('/', async (c) => {
+    return c.redirect(`/${await model.chats.current()}`)
 })
 
 app.get('/:currentChatId', (c) => {
     const { currentChatId } = c.req.param()
     return c.html(
         html`<!doctype html>
-      <h1>Hello! ${currentChatId} ${JSON.stringify(c.req.raw.headers)}!</h1>`
+      <h1>Hello! ${currentChatId} ${JSON.stringify(c.req.raw.headers)}!</h1>
+      ${chatInput}`
     )
 })
 
