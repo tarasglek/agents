@@ -110,7 +110,8 @@ app.get("/:currentChatId", (c) => {
 
 app.post("/:currentChatId", async (c) => {
     const { currentChatId } = c.req.param();
-    // TODO: do something with the post body
+    const body = await c.req.parseBody();
+    console.log(body["input"]);
     return c.redirect(`/${currentChatId}`);
 });
 
