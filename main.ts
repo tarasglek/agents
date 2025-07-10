@@ -92,9 +92,9 @@ app.get("/:currentChatId", (c) => {
         </head>
         <body>`).toString());
 
-        for (const msg of await model.get()) {
+        for (const [i, msg] of (await model.get()).entries()) {
             await stream.write(await (html`
-              <p>
+              <p id="${i}">
                 <pre>${stringifyYaml([msg])}</pre>
               </p>
             `).toString());
