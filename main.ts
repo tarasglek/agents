@@ -106,7 +106,8 @@ app.get("/:currentChatId", (c) => {
     let lastMsg: Message | null = null;
     for (const [i, msg] of (await model.get()).entries()) {
       await stream.write(await (html`
-              <p id="${i}">
+              <p>
+                <a name="${i}"></a>
                 <pre>${stringifyYaml([msg])}</pre>
               </p>
             `).toString());
@@ -119,7 +120,7 @@ app.get("/:currentChatId", (c) => {
       let oldWipMsg = '';
       // so that the screen doesn't jump around
       // 50vh = 50% of viewport height
-      await stream.write(html`<p id=${(await model.get()).length} style="min-height: 50vh;"><pre>`.toString())
+      await stream.write(html`<p style="min-height: 50vh;"><a name="${(await model.get()).length}"></a><pre>`.toString())
       while (model.wipMsg !== null) {
         if (oldWipMsg === model.wipMsg) {
           await stream.sleep(1000 / 60); // 60 FPS
@@ -159,7 +160,7 @@ app.post("/:currentChatId", async (c) => {
     content: userInput.trim(),
   } as AgentInputItem;
   await model.appendMessages([msg]);
-  return c.redirect(`/${currentChatId}#${(await model.get()).length - 1}`);
+  return c.redirect(`/${currentChatId}#${(await model.get()).length}`);
 });
 
 export default app;
