@@ -106,6 +106,10 @@ export class ChatModel {
     }
 
     async llm(currentAgent: Agent) {
+        if (this.wipMsg !== null) {
+            throw new Error("Cannot start LLM call while another WIP one");
+        }
+        this.wipMsg = "";
         const msgsBeforeAI = await this.get();
         const stream = await run(currentAgent, msgsBeforeAI, {
             stream: true,
@@ -113,11 +117,7 @@ export class ChatModel {
         let historyLength = msgsBeforeAI.length;
         for await (const event of stream) {
             if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
-                if (!this.wipMsg) {
-                    this.wipMsg = event.data.delta;
-                } else {
-                    this.wipMsg += event.data.delta;
-                }
+                this.wipMsg += event.data.delta;
             }
             if (historyLength < stream.history.length) {
                 const newMessages = stream.history.slice(historyLength);

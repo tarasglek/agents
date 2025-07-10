@@ -112,8 +112,8 @@ Today's date: ${new Date().toISOString().split("T")[0]}
 
 
     agents.push(coder);
-  } catch (e) {
-    console.error(`Failed to load rs_filesystem mcp`, e)
+  } catch (_e) {
+    console.error(`Failed to load rs_filesystem mcp`)
   }
 
 

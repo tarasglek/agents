@@ -1,17 +1,13 @@
 // deno-lint-ignore-file no-process-global
 import { Agent, AgentInputItem } from "@openai/agents";
 
-import { stringify } from "jsr:@std/yaml";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { initAgents } from "./agents.ts";
 import { ChatModel, Message } from "./model.ts";
+import { stringifyYaml } from "./util.ts";
 
-
-function stringifyYaml(obj: unknown): string {
-  return stringify(obj, { skipInvalid: true });
-}
 
 const flags = parseArgs(Deno.args, {
   string: ["provider", "model"],
@@ -112,7 +108,7 @@ const messagePrinterWrapper = (source: Store<Message>) =>
 
 async function main() {
   const agents = await initAgents({ USE_OPENROUTER, USE_TRACE, model: flags.model });
-  const model = await ChatModel.init("history.jsonl", agents, messagePrinterWrapper);
+  const model = await ChatModel.init("data/history.jsonl", agents, messagePrinterWrapper);
 
   let currentAgent = agents.at(-1)!;
 

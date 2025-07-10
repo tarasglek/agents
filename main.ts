@@ -1,11 +1,11 @@
 import { Hono } from "hono";
-import { html, raw } from "hono/html";
-import { stream, streamText } from "hono/streaming";
+import { html } from "hono/html";
+import { stream } from "hono/streaming";
 import { initAgents } from "./agents.ts";
 import { ChatModel, Message } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { stringifyYaml } from "./util.ts";
-import { Agent, AgentInputItem, user } from "@openai/agents-core";
+import { Agent, AgentInputItem } from "@openai/agents-core";
 const messagePrinterWrapper = (source: Store<Message>) =>
   createProxyStore(source, {
     async put(superPut, ref, data) {
@@ -68,11 +68,6 @@ const newChatButton = html`
   </form>
 `;
 
-app.get("/", async (c) => {
-  const model = await getModel();
-  return c.redirect(`/${await model.chats.current()}`);
-});
-
 app.get("/stream", (c) => {
   c.header('Content-Type', 'text/html; charset=utf-8');
   return stream(c, async (stream) => {
@@ -93,6 +88,12 @@ app.get("/stream", (c) => {
     // Close HTML
     await stream.write(`</body></html>`);
   });
+});
+
+app.post("/new-chat", async (c) => {
+  const model = await getModel();
+  const newChatId = await model.chats.newChat();
+  return c.redirect(`/${newChatId}`);
 });
 
 app.get("/:currentChatId", (c) => {
@@ -151,6 +152,11 @@ app.get("/:currentChatId", (c) => {
   });
 });
 
+app.get("/", async (c) => {
+  const model = await getModel();
+  return c.redirect(`/${await model.chats.current()}`);
+});
+
 app.post("/:currentChatId", async (c) => {
   const { currentChatId } = c.req.param();
   const body = await c.req.parseBody();
@@ -172,12 +178,6 @@ app.post("/:currentChatId", async (c) => {
   } as AgentInputItem;
   await model.appendMessages([msg]);
   return c.redirect(`/${currentChatId}#${(await model.get()).length}`);
-});
-
-app.post("/new-chat", async (c) => {
-  const model = await getModel();
-  const newChatId = await model.chats.newChat();
-  return c.redirect(`/${newChatId}`);
 });
 
 export default app;
