@@ -18,10 +18,17 @@ function log(message) {
  * @returns {Promise<void>}
  */
 function speak(text) {
+  log(`Speaking: ${text}`);
   return new Promise((resolve, reject) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = () => resolve();
-    utterance.onerror = (event) => reject(event.error);
+    utterance.onend = () => {
+      log("Finished speaking.");
+      resolve();
+    };
+    utterance.onerror = (event) => {
+      log(`Error speaking: ${event.error}`);
+      reject(event.error);
+    };
     window.speechSynthesis.speak(utterance);
   });
 }
