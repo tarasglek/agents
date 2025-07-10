@@ -118,8 +118,11 @@ app.get("/:currentChatId", (c) => {
       const agents = await getAgents();
       /*do not await*/ model.llm(agents[0]);
       let oldWipMsg = '';
-      // so that the screen doesn't jump around
-      // 50vh = 50% of viewport height
+      // Trick to scroll to the new message as it streams:
+      // An anchor tag with `autofocus` will be scrolled into view by the browser.
+      // `tabindex="-1"` makes the anchor focusable without being in the tab order.
+      // The `min-height: 50vh` (50% of viewport height) on the <pre> prevents the
+      // layout from jumping around as the content streams in.
       await stream.write(html`<p><a name="${(await model.get()).length}" tabindex="-1" autofocus></a><pre  style="min-height: 50vh;">`.toString())
       while (model.wipMsg !== null) {
         if (oldWipMsg === model.wipMsg) {
