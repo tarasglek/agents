@@ -118,7 +118,7 @@ function startRecordingAndTranscription(
       log("Wake phrase detected!");
       audioRecorder = await AudioRecorder.start();
     }
-    const TIMEOUT = 1000;
+    const TIMEOUT = 3000;
     if (audioRecorder) {
       clearTimeout(noInterimResultsTimeout);
       log("[re]-set noInterimResultsTimeout");
