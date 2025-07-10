@@ -79,11 +79,11 @@ async function startRecordingAndTranscription(
     );
   }
 
-  const audioRecorder = await AudioRecorder.start();
+  /** @type { AudioRecorder | undefined} */
+  let audioRecorder;
 
   return new Promise((resolve, reject) => {
     let finalTranscript = "";
-    let wakePhraseDetected = false;
     let isSpeechEnded = false;
     let speechEndTimeout;
 
@@ -95,7 +95,7 @@ async function startRecordingAndTranscription(
 
     // Set up the event listeners for SpeechRecognition
     /** @param {SpeechRecognitionEvent} event */
-    recognition.onresult = function (event) {
+    recognition.onresult = async function (event) {
       let interimTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
@@ -104,10 +104,13 @@ async function startRecordingAndTranscription(
           interimTranscript += event.results[i][0].transcript;
         }
       }
-      console.log("Interim transcript json:", JSON.stringify(interimTranscript));
+      console.log(
+        "Interim transcript json:",
+        JSON.stringify(interimTranscript),
+      );
       if (wakePhraseRegex.test(interimTranscript)) {
         console.log("Wake phrase detected!");
-        wakePhraseDetected = true;
+        audioRecorder = await AudioRecorder.start();
       }
     };
 
@@ -117,9 +120,22 @@ async function startRecordingAndTranscription(
       reject(new Error("Error occurred in recognition: " + event.error));
     };
 
-    recognition.onspeechend = function () {
+    recognition.onspeechend = async function () {
       isSpeechEnded = true;
-      console.log("Speech has stopped being detected");
+      console.log("Speech has stopped being detected", audioRecorder);
+      if (audioRecorder) {
+        const audioUrl = await audioRecorder.stop();
+        audioRecorder = undefined;
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
+          audio.onerror = (event) => {
+            console.error("Error playing audio:", event.target.error);
+          };
+          audio.play().catch((error) => {
+            console.warn("Audio playback failed:", error);
+          });
+        }
+      }
       // Start a timeout when speech ends
       /*speechEndTimeout = setTimeout(() => {
           recognition.stop(); // Stop speech recognition after 5 seconds of silence
@@ -130,23 +146,6 @@ async function startRecordingAndTranscription(
       isSpeechEnded = false;
       console.log("Speech has been detected");
       clearTimeout(speechEndTimeout); // Clear the timeout when speech starts again
-    };
-
-    recognition.onend = async () => {
-      console.log("Speech recognition ended. Stopping media recorder.");
-      const audioUrl = await audioRecorder.stop();
-
-      if (audioUrl) {
-        const audio = new Audio(audioUrl);
-        audio.onerror = (event) => {
-          console.error("Error playing audio:", event.target.error);
-        };
-        audio.play().catch((error) => {
-          console.warn("Audio playback failed:", error);
-        });
-      }
-
-      resolve({ transcript: finalTranscript, audioUrl: audioUrl });
     };
 
     // Start speech recognition
