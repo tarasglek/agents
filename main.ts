@@ -80,7 +80,6 @@ app.get("/chat/:currentChatId", (c) => {
         </head>
         <body>
           <main class="container">`).toString());
-    await stream.write(newChatButton.toString());
 
     const model = await getModel();
 
@@ -131,6 +130,8 @@ app.get("/chat/:currentChatId", (c) => {
       }
     }
     await stream.write(await (chatInput.toString()));
+    await stream.write(newChatButton.toString());
+
     await stream.write(await (html`
           </main>
         </body>
