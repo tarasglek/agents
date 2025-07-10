@@ -48,7 +48,7 @@ const chatInput = html`
     <label for="input">User</label>
     <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
       <textarea id="input" name="input" style="flex: 1;"></textarea>
-      <button type="submit" style="flex-shrink: 0; width: 4rem; height: 4rem;">Send</button>
+      <button type="submit" style="flex-shrink: 0; width: 4rem; height: 4rem; padding: 1rem;">Send</button>
     </div>
   </form>
 `;
