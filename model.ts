@@ -14,7 +14,7 @@ export type Chat = number;
 export type ModelOptions = {
     filename: string;
     agents: Agent[];
-    listener: (source: Store<Message>) => Store<Message>;
+    listener?: (source: Store<Message>) => Store<Message>;
 };
 
 export class Chats extends ProxyStore<Chat> {
@@ -170,7 +170,7 @@ export class ChatModel {
         // putting messages into a relative store with prefix "messages"
         // so in future we can put more stuff like "agents" in there, etc
         const messagesStore = new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages");
-        const allMessages = listener(messagesStore);
+        const allMessages = listener ? listener(messagesStore) : messagesStore;
 
         const ret = new ChatModel(chats, allMessages);
         ret.agents = agents;

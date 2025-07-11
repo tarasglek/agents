@@ -6,6 +6,7 @@
 
 <body>
     <script>
+        // we fight cloudflare caching
         const script = document.createElement('script');
         script.src = `./audio-input.js?${Date.now()}`;
         document.body.appendChild(script);

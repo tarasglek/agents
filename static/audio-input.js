@@ -139,10 +139,10 @@ function startRecordingAndTranscription(
     );
     if (wakePhraseRegex.test(interimTranscript) && !audioRecorder) {
       log("Wake phrase detected!");
-      await speak("Listening");
+      speak("Listening");
       audioRecorder = await AudioRecorder.start();
     }
-    const TIMEOUT = 3000;
+    const TIMEOUT = 4000;
     if (audioRecorder) {
       clearTimeout(noInterimResultsTimeout);
       log("[re]-set noInterimResultsTimeout");
