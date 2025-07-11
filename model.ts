@@ -3,6 +3,7 @@ import { Agent, AgentInputItem, run } from "@openai/agents";
 import { JSONLAppender, replayJSONL } from "./io-combinators.ts";
 
 import { createProxyStore, DictStore, ProxyStore, RelativeStore, Store } from "./storage-combinators.ts";
+import { stringifyYaml } from "./util.ts";
 
 export type Message = AgentInputItem;
 
@@ -15,6 +16,7 @@ export type ModelOptions = {
     filename: string;
     agents: Agent[];
     listener?: (source: Store<Message>) => Store<Message>;
+    USE_TRACE?: boolean;
 };
 
 export class Chats extends ProxyStore<Chat> {
@@ -135,6 +137,9 @@ export class ChatModel {
         const newMessages = stream.history.slice(historyLength);
         // shouldn't have new messages here cos they should all appear during streaming
         await this.appendMessages(newMessages, chatId);
+        const rawResponses = stream.rawResponses.slice(historyLength);
+        console.log("rawResponses\n", stringifyYaml(rawResponses));
+
         this.wipMsg = null; // reset wip message after LLM call
     }
 

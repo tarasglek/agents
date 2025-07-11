@@ -112,6 +112,7 @@ async function main() {
     filename: "data/history.jsonl",
     agents,
     listener: messagePrinterWrapper,
+    USE_TRACE,
   });
 
   let currentAgent = agents.at(-1)!;
