@@ -123,6 +123,18 @@ export class ChatModel {
             if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
                 yield event.data.delta;
             } else {
+                // TODO: Listen to events for more advanced features.
+                // - Search/Citations:
+                //   - `response.output_item.added` with `web_search_call`
+                //   - `response.web_search_call.searching`
+                //   - `response.output_item.done` with `web_search_call` (contains query)
+                //   - `tool_called` for `web_search_call`
+                //   - Citations may appear in `annotations` of `output_text` parts.
+                // - Better message detection:
+                //   - `response.output_item.done` with `item.type: 'message'` signals a complete message from the AI.
+                //     This is more direct than waiting for `stream.history` to update.
+                // - Storing full API responses:
+                //   - The `response_done` event contains the final `response` object, which can be stored.
                 if (this.options.USE_TRACE) {
                     console.log(stringifyYaml({ "event": event }));
                 }
