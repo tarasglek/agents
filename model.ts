@@ -4,6 +4,7 @@ import { JSONLAppender, replayJSONL } from "./io-combinators.ts";
 
 import { createProxyStore, DictStore, ProxyStore, RelativeStore, Store } from "./storage-combinators.ts";
 import { stringifyYaml } from "./util.ts";
+import { urlToHttpOptions } from "node:url";
 
 export type Message = AgentInputItem;
 
@@ -54,7 +55,7 @@ export class Chats extends ProxyStore<Chat> {
 export class ChatModel {
     public agents: Agent[] = [];
 
-    constructor(public chats: Chats, private allMessages: Store<Message>) { }
+    constructor(public chats: Chats, private allMessages: Store<Message>, public options: ModelOptions) { }
 
     async get(chatId?: string): Promise<Message[]> {
         const currentChatId = chatId ?? await this.chats.current();
@@ -121,6 +122,10 @@ export class ChatModel {
         for await (const event of stream) {
             if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
                 yield event.data.delta;
+            } else {
+                if (this.options.USE_TRACE) {
+                    console.log(stringifyYaml({ "event": event }));
+                }
             }
             if (historyLength < stream.history.length) {
                 const newMessages = stream.history.slice(historyLength);
@@ -132,8 +137,9 @@ export class ChatModel {
         const newMessages = stream.history.slice(historyLength);
         // shouldn't have new messages here cos they should all appear during streaming
         await this.appendMessages(newMessages, chatId);
-        const rawResponses = stream.rawResponses.slice(historyLength);
-        console.log("rawResponses\n", stringifyYaml(rawResponses));
+        if (this.options.USE_TRACE) {
+            console.log("rawResponses\n", stringifyYaml(stream.rawResponses));
+        }
     }
 
     static async init(options: ModelOptions) {
@@ -170,7 +176,7 @@ export class ChatModel {
         const messagesStore = new RelativeStore<Message>(diskStore as unknown as Store<Message>, "messages");
         const allMessages = listener ? listener(messagesStore) : messagesStore;
 
-        const ret = new ChatModel(chats, allMessages);
+        const ret = new ChatModel(chats, allMessages, options);
         ret.agents = agents;
         return ret;
     }
