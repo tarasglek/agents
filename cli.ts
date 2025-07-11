@@ -108,7 +108,11 @@ const messagePrinterWrapper = (source: Store<Message>) =>
 
 async function main() {
   const agents = await initAgents({ USE_OPENROUTER, USE_TRACE, model: flags.model });
-  const model = await ChatModel.init("data/history.jsonl", agents, messagePrinterWrapper);
+  const model = await ChatModel.init({
+    filename: "data/history.jsonl",
+    agents,
+    listener: messagePrinterWrapper,
+  });
 
   let currentAgent = agents.at(-1)!;
 

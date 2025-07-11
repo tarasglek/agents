@@ -34,11 +34,11 @@ function getModel(): Promise<ChatModel> {
   }
   modelPromise = (async () => {
     const agents = await getAgents();
-    return await ChatModel.init(
-      "data/history.jsonl",
+    return await ChatModel.init({
+      filename: "data/history.jsonl",
       agents,
-      messagePrinterWrapper,
-    );
+      listener: messagePrinterWrapper,
+    });
   })();
   return modelPromise;
 }

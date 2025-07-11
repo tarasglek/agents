@@ -11,6 +11,12 @@ export type Message = AgentInputItem;
 export type Chat = number;
 
 
+export type ModelOptions = {
+    filename: string;
+    agents: Agent[];
+    listener: (source: Store<Message>) => Store<Message>;
+};
+
 export class Chats extends ProxyStore<Chat> {
     private currentChatId: undefined | string = undefined;
 
@@ -132,7 +138,8 @@ export class ChatModel {
         this.wipMsg = null; // reset wip message after LLM call
     }
 
-    static async init(filename: string, agents: Agent[], listener: (source: Store<Message>) => Store<Message>) {
+    static async init(options: ModelOptions) {
+        const { filename, agents, listener } = options;
         const memoryStore = new DictStore<Message>();
         const chatsStore = new DictStore<Chat>();
         const chats = new Chats(chatsStore);
