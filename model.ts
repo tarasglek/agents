@@ -53,7 +53,6 @@ export class Chats extends ProxyStore<Chat> {
 
 export class ChatModel {
     public agents: Agent[] = [];
-    public wipMsg: string | null = null;
 
     constructor(public chats: Chats, private allMessages: Store<Message>) { }
 
@@ -113,11 +112,7 @@ export class ChatModel {
         return ret
     }
 
-    async llm(currentAgent: Agent, chatId?: string) {
-        if (this.wipMsg !== null) {
-            throw new Error("Cannot start LLM call while another WIP one");
-        }
-        this.wipMsg = "";
+    async *llm(currentAgent: Agent, chatId?: string): AsyncGenerator<string> {
         const msgsBeforeAI = await this.get(chatId);
         const stream = await run(currentAgent, msgsBeforeAI, {
             stream: true,
@@ -125,7 +120,7 @@ export class ChatModel {
         let historyLength = msgsBeforeAI.length;
         for await (const event of stream) {
             if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
-                this.wipMsg += event.data.delta;
+                yield event.data.delta;
             }
             if (historyLength < stream.history.length) {
                 const newMessages = stream.history.slice(historyLength);
@@ -139,8 +134,6 @@ export class ChatModel {
         await this.appendMessages(newMessages, chatId);
         const rawResponses = stream.rawResponses.slice(historyLength);
         console.log("rawResponses\n", stringifyYaml(rawResponses));
-
-        this.wipMsg = null; // reset wip message after LLM call
     }
 
     static async init(options: ModelOptions) {

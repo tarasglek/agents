@@ -134,7 +134,10 @@ async function main() {
       } as AgentInputItem;
       await model.appendMessages([msg]);
 
-      await model.llm(currentAgent);
+      for await (const delta of model.llm(currentAgent)) {
+        await process.stdout.write(delta);
+      }
+      await process.stdout.write("\n");
     }
   }
 }
