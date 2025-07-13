@@ -134,10 +134,14 @@ async function main() {
       } as AgentInputItem;
       await model.appendMessages([msg]);
 
-      for await (const delta of model.llm(currentAgent)) {
-        await process.stdout.write(delta);
+      try {
+        for await (const delta of model.llm(currentAgent)) {
+          await process.stdout.write(delta);
+        }
+        await process.stdout.write("\n");
+      } catch (error) {
+        console.error("\nAn error occurred:", error.message);
       }
-      await process.stdout.write("\n");
     }
   }
 }
