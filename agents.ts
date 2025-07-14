@@ -1,7 +1,7 @@
 import { Agent, MCPServerStdio, tool, webSearchTool } from "@openai/agents";
 import { RECOMMENDED_PROMPT_PREFIX } from '@openai/agents-core/extensions';
 
-import { OpenAI } from "openai";
+import { ClientOptions, OpenAI } from "openai";
 import { z } from 'zod';
 import { setDefaultOpenAIClient } from "@openai/agents";
 import {
@@ -21,7 +21,7 @@ export async function initAgents(options: { USE_OPENROUTER: boolean, USE_TRACE?:
   const fetchWithPrettyJson = fetchProxyCurlLogger({
     logger: prettyJsonLogger,
   });
-  const customClient = new OpenAI({
+  const openaiOptions: ClientOptions = {
     ...(options.USE_OPENROUTER
       ? {
         baseURL: "https://openrouter.ai/api/v1",
@@ -29,7 +29,8 @@ export async function initAgents(options: { USE_OPENROUTER: boolean, USE_TRACE?:
           "OPENROUTER_API_KEY",
         ),
       }
-      : {}),
+      : {});
+    const customClient = new OpenAI(openaiOptions),
     fetch: options.USE_TRACE ? fetchWithPrettyJson : undefined,
   });
   setDefaultOpenAIClient(customClient);
