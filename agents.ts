@@ -29,10 +29,10 @@ export async function initAgents(options: { USE_OPENROUTER: boolean, USE_TRACE?:
           "OPENROUTER_API_KEY",
         ),
       }
-      : {});
-    const customClient = new OpenAI(openaiOptions),
+      : {}),
     fetch: options.USE_TRACE ? fetchWithPrettyJson : undefined,
-  });
+  };
+  const customClient = new OpenAI(openaiOptions);
   setDefaultOpenAIClient(customClient);
 
   const params = {
