@@ -116,6 +116,8 @@ export class ChatModel {
 
     async *llm(currentAgent: Agent, chatId?: string): AsyncGenerator<string> {
         let msgsBeforeAI = await this.get(chatId);
+        // filter out hosted tool calls if using OpenRouter
+        // (eg i could've used search in  prior iteration while talking via openai)
         msgsBeforeAI = msgsBeforeAI.filter((msg) => !(this.options.USE_OPENROUTER && msg.type === "hosted_tool_call"));
         const stream = await run(currentAgent, msgsBeforeAI, {
             stream: true,
