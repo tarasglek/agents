@@ -103,6 +103,7 @@ class AudioRecorder {
 class VoiceAssistant {
   /** @type {string} */
   #state;
+  #isMuted = true;
   /** @type {RegExp} */
   #wakePhraseRegex;
   /** @type {SpeechRecognition} */
@@ -122,6 +123,39 @@ class VoiceAssistant {
   #eventQueue = [];
   /** @type {(() => void) | null} */
   #eventResolver = null;
+
+  /** @returns {boolean} */
+  get isMuted() {
+    return this.#isMuted;
+  }
+
+  toggleMute() {
+    this.#isMuted = !this.#isMuted;
+    log(`Mute toggled. isMuted: ${this.#isMuted}`);
+
+    if (this.#isMuted) {
+      window.speechSynthesis.cancel();
+      if (
+        this.state === VoiceAssistant.State.RECORDING_USER_SPEECH ||
+        this.state === VoiceAssistant.State.ACTIVATING
+      ) {
+        // Don't emit a command, just stop recording and reset state.
+        this.#audioRecorder?.stop().then((url) => {
+          if (url) URL.revokeObjectURL(url); // Clean up blob URL
+        });
+        this.#audioRecorder = undefined;
+        clearTimeout(this.#endOfSpeechTimeout);
+        this.#endOfSpeechTimeout = undefined;
+        clearTimeout(this.#noSpeechAfterWakeWordTimeout);
+        this.#noSpeechAfterWakeWordTimeout = undefined;
+        this.state = VoiceAssistant.State.LISTENING_FOR_WAKE_WORD;
+        return;
+      }
+    }
+
+    // To refresh UI
+    this.#emit({ type: "statechange", state: this.state });
+  }
 
   static State = {
     LISTENING_FOR_WAKE_WORD: "LISTENING_FOR_WAKE_WORD",
@@ -219,6 +253,7 @@ class VoiceAssistant {
    * @returns {Promise<void>}
    */
   speak(text) {
+    if (this.#isMuted) return Promise.resolve();
     this.#emit({ type: "speakstart", text });
     return new Promise((resolve, reject) => {
       this.#utterance.text = text;
@@ -274,6 +309,7 @@ class VoiceAssistant {
    * @returns {Promise<void>}
    */
   async #onResult(event) {
+    if (this.#isMuted) return;
     let interimTranscript = "";
     let newlyFinalizedTranscript = "";
     for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -352,6 +388,12 @@ class VoiceAssistant {
  * @param {VoiceAssistant} assistant
  */
 function updateUI(event, statusDiv, micIcon, assistant) {
+  if (assistant.isMuted) {
+    micIcon.style.fill = "black";
+    statusDiv.textContent = "Muted. Tap mic to unmute.";
+    return;
+  }
+
   switch (event.type) {
     case "command":
       if (event.audioUrl) {
@@ -412,7 +454,8 @@ function updateUI(event, statusDiv, micIcon, assistant) {
   }
 }
 
-async function start() {
+// Usage
+(async () => {
   const statusDiv = document.getElementById("status-div");
   const micIcon = document.getElementById("mic-icon");
   logDiv = document.getElementById("log-div");
@@ -420,6 +463,8 @@ async function start() {
   try {
     const assistant = await VoiceAssistant.init();
     log("Voice assistant initialized. Listening for events...");
+
+    micIcon.addEventListener("click", () => assistant.toggleMute());
 
     for await (const event of assistant.events()) {
       updateUI(event, statusDiv, micIcon, assistant);
@@ -433,15 +478,4 @@ async function start() {
       micIcon.style.fill = "black";
     }
   }
-}
-
-// Usage
-const statusDiv = document.getElementById("status-div");
-const micIcon = document.getElementById("mic-icon");
-
-if (statusDiv) {
-  statusDiv.textContent = "Tap mic to start";
-}
-if (micIcon) {
-  micIcon.addEventListener("click", start, { once: true });
-}
+})();
