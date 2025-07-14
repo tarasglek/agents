@@ -5,19 +5,22 @@
  */
 
 /**
- * @typedef {{type: 'statechange', state: string}} StateChangeEvent
- * @typedef {{type: 'transcript', transcript: string, isFinal: boolean}} TranscriptEvent
- * @typedef {{type: 'command', audioUrl: string | null}} CommandEvent
- * @typedef {{type: 'speakstart', text: string}} SpeakStartEvent
- * @typedef {{type: 'speakend'}} SpeakEndEvent
- * @typedef {{type: 'error', message: string}} ErrorEvent
+ * @typedef {{type: 'statechange', state: string, timestamp: number}} StateChangeEvent
+ * @typedef {{type: 'transcript', transcript: string, isFinal: boolean, timestamp: number}} TranscriptEvent
+ * @typedef {{type: 'command', audioUrl: string | null, timestamp: number}} CommandEvent
+ * @typedef {{type: 'speakstart', text: string, timestamp: number}} SpeakStartEvent
+ * @typedef {{type: 'speakend', timestamp: number}} SpeakEndEvent
+ * @typedef {{type: 'error', message: string, timestamp: number}} ErrorEvent
  * @typedef {StateChangeEvent | TranscriptEvent | CommandEvent | SpeakStartEvent | SpeakEndEvent | ErrorEvent} VoiceAssistantEvent
  */
 
 let lastLogTime = Date.now();
-/** @param {string} message */
-function log(message) {
-  const now = Date.now();
+/**
+ * @param {string} message
+ * @param {number} [timestamp]
+ */
+function log(message, timestamp) {
+  const now = timestamp ?? Date.now();
   const diff = now - lastLogTime;
   lastLogTime = now;
   console.log(`+${diff}ms ${message}`);
@@ -50,7 +53,6 @@ class AudioRecorder {
       };
 
       mediaRecorder.start();
-      log("Audio recording started.");
 
       return new AudioRecorder(mediaRecorder, audioChunks);
     } catch (err) {
@@ -65,7 +67,6 @@ class AudioRecorder {
   stop() {
     return new Promise((resolve, reject) => {
       this.mediaRecorder.onstop = () => {
-        log("MediaRecorder stopped. Finalizing audio.");
         if (this.audioChunks.length === 0) {
           console.warn("No audio chunks recorded. Cannot create audio blob.");
           resolve(null);
@@ -144,10 +145,10 @@ class VoiceAssistant {
   }
 
   /**
-   * @param {VoiceAssistantEvent} event
+   * @param {object} event - event data, timestamp will be added automatically
    */
   #emit(event) {
-    this.#eventQueue.push(event);
+    this.#eventQueue.push({ ...event, timestamp: Date.now() });
     if (this.#eventResolver) {
       this.#eventResolver();
       this.#eventResolver = null;
@@ -158,7 +159,6 @@ class VoiceAssistant {
    * @returns {AsyncGenerator<VoiceAssistantEvent>}
    */
   async *events() {
-    log("Starting event stream.");
     // emit initial state
     this.#emit({
       type: "statechange",
@@ -210,17 +210,14 @@ class VoiceAssistant {
    * @returns {Promise<void>}
    */
   speak(text) {
-    log(`Speaking: ${text}`);
     this.#emit({ type: "speakstart", text });
     return new Promise((resolve, reject) => {
       this.#utterance.text = text;
       this.#utterance.onend = () => {
-        log("Finished speaking.");
         this.#emit({ type: "speakend" });
         resolve();
       };
       this.#utterance.onerror = (event) => {
-        log(`Error speaking: ${event.error}`);
         this.#emit({ type: "error", message: `TTS Error: ${event.error}` });
         reject(event.error);
       };
@@ -232,14 +229,11 @@ class VoiceAssistant {
   async #activate() {
     if (this.state !== VoiceAssistant.State.LISTENING_FOR_WAKE_WORD) return;
 
-    log("Wake phrase detected! Activating...");
     this.state = VoiceAssistant.State.ACTIVATING;
 
-    await this.speak("Listening");
     this.#finalTranscriptSinceRecording = "";
     this.#audioRecorder = await AudioRecorder.start();
     this.state = VoiceAssistant.State.RECORDING_USER_SPEECH;
-    log("Recording user speech.");
 
     this.#noSpeechAfterWakeWordTimeout = setTimeout(() => {
       log("No speech detected for 15s, cancelling recording.");
@@ -251,7 +245,6 @@ class VoiceAssistant {
   async #stopRecording() {
     if (this.state !== VoiceAssistant.State.RECORDING_USER_SPEECH) return;
 
-    log("Stopping recording session.");
     this.state = VoiceAssistant.State.PROCESSING_USER_SPEECH;
 
     clearTimeout(this.#endOfSpeechTimeout);
@@ -264,7 +257,6 @@ class VoiceAssistant {
 
     this.#emit({ type: "command", audioUrl });
 
-    log("Processing complete. Listening for wake word.");
     this.state = VoiceAssistant.State.LISTENING_FOR_WAKE_WORD;
   }
 
@@ -282,9 +274,6 @@ class VoiceAssistant {
         interimTranscript += event.results[i][0].transcript;
       }
     }
-    log(
-      `Transcript update: final='${newlyFinalizedTranscript}' interim='${interimTranscript}'`,
-    );
 
     if (interimTranscript) {
       this.#emit({
@@ -314,7 +303,6 @@ class VoiceAssistant {
       const timeout = hasSpeech ? 1500 : 4000;
 
       clearTimeout(this.#endOfSpeechTimeout);
-      log(`[re]-set endOfSpeechTimeout (${timeout}ms)`);
       this.#endOfSpeechTimeout = setTimeout(
         () => this.#stopRecording(),
         timeout,
@@ -331,24 +319,19 @@ class VoiceAssistant {
     console.error("Error occurred in recognition: " + event.error);
   }
 
-  #onSpeechEnd() {
-    log("Speech has stopped being detected");
-  }
+  #onSpeechEnd() {}
 
   #onSpeechStart() {
-    log("Speech has been detected");
     if (
       this.state === VoiceAssistant.State.RECORDING_USER_SPEECH &&
       this.#noSpeechAfterWakeWordTimeout
     ) {
       clearTimeout(this.#noSpeechAfterWakeWordTimeout);
       this.#noSpeechAfterWakeWordTimeout = undefined;
-      log("Cleared no-speech-after-wake-word timeout.");
     }
   }
 
   #onEnd() {
-    log("Speech recognition has ended, restarting...");
     this.#recognition.start();
   }
 }
@@ -360,11 +343,10 @@ class VoiceAssistant {
     log("Voice assistant initialized. Listening for events...");
 
     for await (const event of assistant.events()) {
-      log(`Event: ${event.type}`);
       switch (event.type) {
         case "command":
           if (event.audioUrl) {
-            log(`Got command, playing audio from ${event.audioUrl}`);
+            log(`Got command, playing audio from ${event.audioUrl}`, event.timestamp);
             const audio = new Audio(event.audioUrl);
             audio.onerror = (e) => {
               console.error("Error playing audio:", e.target.error);
@@ -373,23 +355,29 @@ class VoiceAssistant {
               console.warn("Audio playback failed:", error);
             });
           } else {
-            log("No command recorded.");
+            log("No command recorded.", event.timestamp);
           }
           break;
         case "statechange":
-          log(`Assistant state: ${event.state}`);
+          log(`Assistant state: ${event.state}`, event.timestamp);
+          if (event.state === VoiceAssistant.State.ACTIVATING) {
+            assistant.speak("Listening");
+          }
           break;
         case "transcript":
-          log(`Transcript (final=${event.isFinal}): ${event.transcript}`);
+          log(
+            `Transcript (final=${event.isFinal}): ${event.transcript}`,
+            event.timestamp,
+          );
           break;
         case "error":
           console.error(`Assistant error: ${event.message}`);
           break;
         case "speakstart":
-          log(`Assistant speaking: "${event.text}"`);
+          log(`Assistant speaking: "${event.text}"`, event.timestamp);
           break;
         case "speakend":
-          log(`Assistant finished speaking.`);
+          log("Assistant finished speaking.", event.timestamp);
           break;
       }
     }
