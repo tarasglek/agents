@@ -336,6 +336,73 @@ class VoiceAssistant {
   }
 }
 
+/**
+ * @param {VoiceAssistantEvent} event
+ * @param {HTMLElement} statusDiv
+ * @param {SVGElement} micIcon
+ * @param {VoiceAssistant} assistant
+ */
+function updateUI(event, statusDiv, micIcon, assistant) {
+  switch (event.type) {
+    case "command":
+      if (event.audioUrl) {
+        log(`Got command, playing audio from ${event.audioUrl}`, event.timestamp);
+        const audio = new Audio(event.audioUrl);
+        audio.onerror = (e) => {
+          console.error("Error playing audio:", e.target.error);
+        };
+        audio.play().catch((error) => {
+          console.warn("Audio playback failed:", error);
+        });
+      } else {
+        log("No command recorded.", event.timestamp);
+      }
+      break;
+    case "statechange":
+      log(`Assistant state: ${event.state}`, event.timestamp);
+      switch (event.state) {
+        case VoiceAssistant.State.LISTENING_FOR_WAKE_WORD:
+          micIcon.style.fill = "gray";
+          statusDiv.textContent = "Say 'OK Metallica' to start.";
+          break;
+        case VoiceAssistant.State.ACTIVATING:
+          micIcon.style.fill = "orange";
+          statusDiv.textContent = "Heard you!";
+          break;
+        case VoiceAssistant.State.RECORDING_USER_SPEECH:
+          micIcon.style.fill = "red";
+          statusDiv.textContent = "Listening...";
+          break;
+        case VoiceAssistant.State.PROCESSING_USER_SPEECH:
+          micIcon.style.fill = "blue";
+          statusDiv.textContent = "Thinking...";
+          break;
+      }
+      if (event.state === VoiceAssistant.State.ACTIVATING) {
+        assistant.speak("Listening");
+      }
+      break;
+    case "transcript":
+      log(
+        `Transcript (final=${event.isFinal}): ${event.transcript}`,
+        event.timestamp,
+      );
+      statusDiv.textContent = event.transcript;
+      break;
+    case "error":
+      console.error(`Assistant error: ${event.message}`);
+      statusDiv.textContent = `Error: ${event.message}`;
+      break;
+    case "speakstart":
+      log(`Assistant speaking: "${event.text}"`, event.timestamp);
+      statusDiv.textContent = `Speaking...`;
+      break;
+    case "speakend":
+      log("Assistant finished speaking.", event.timestamp);
+      break;
+  }
+}
+
 // Usage
 (async () => {
   const statusDiv = document.getElementById("status-div");
@@ -346,64 +413,7 @@ class VoiceAssistant {
     log("Voice assistant initialized. Listening for events...");
 
     for await (const event of assistant.events()) {
-      switch (event.type) {
-        case "command":
-          if (event.audioUrl) {
-            log(`Got command, playing audio from ${event.audioUrl}`, event.timestamp);
-            const audio = new Audio(event.audioUrl);
-            audio.onerror = (e) => {
-              console.error("Error playing audio:", e.target.error);
-            };
-            audio.play().catch((error) => {
-              console.warn("Audio playback failed:", error);
-            });
-          } else {
-            log("No command recorded.", event.timestamp);
-          }
-          break;
-        case "statechange":
-          log(`Assistant state: ${event.state}`, event.timestamp);
-          switch (event.state) {
-            case VoiceAssistant.State.LISTENING_FOR_WAKE_WORD:
-              micIcon.style.fill = "gray";
-              statusDiv.textContent = "Say 'OK Metallica' to start.";
-              break;
-            case VoiceAssistant.State.ACTIVATING:
-              micIcon.style.fill = "orange";
-              statusDiv.textContent = "Heard you!";
-              break;
-            case VoiceAssistant.State.RECORDING_USER_SPEECH:
-              micIcon.style.fill = "red";
-              statusDiv.textContent = "Listening...";
-              break;
-            case VoiceAssistant.State.PROCESSING_USER_SPEECH:
-              micIcon.style.fill = "blue";
-              statusDiv.textContent = "Thinking...";
-              break;
-          }
-          if (event.state === VoiceAssistant.State.ACTIVATING) {
-            assistant.speak("Listening");
-          }
-          break;
-        case "transcript":
-          log(
-            `Transcript (final=${event.isFinal}): ${event.transcript}`,
-            event.timestamp,
-          );
-          statusDiv.textContent = event.transcript;
-          break;
-        case "error":
-          console.error(`Assistant error: ${event.message}`);
-          statusDiv.textContent = `Error: ${event.message}`;
-          break;
-        case "speakstart":
-          log(`Assistant speaking: "${event.text}"`, event.timestamp);
-          statusDiv.textContent = `Speaking...`;
-          break;
-        case "speakend":
-          log("Assistant finished speaking.", event.timestamp);
-          break;
-      }
+      updateUI(event, statusDiv, micIcon, assistant);
     }
   } catch (err) {
     console.error("An error occurred:", err);
