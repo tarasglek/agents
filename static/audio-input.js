@@ -76,15 +76,28 @@ class AudioRecorder {
   }
 }
 
+/**
+ * Manages the voice assistant's state, including wake word detection,
+ * speech recording, and text-to-speech.
+ */
 class VoiceAssistant {
+  /** @type {string} */
   #state;
+  /** @type {RegExp} */
   #wakePhraseRegex;
+  /** @type {SpeechRecognition} */
   #recognition;
+  /** @type {AudioRecorder | undefined} */
   #audioRecorder;
+  /** @type {number | undefined} */
   #endOfSpeechTimeout;
+  /** @type {number | undefined} */
   #noSpeechAfterWakeWordTimeout;
+  /** @type {string} */
   #finalTranscriptSinceRecording;
+  /** @type {((value: string | null) => void) | null} */
   #resolveCommand;
+  /** @type {SpeechSynthesisUtterance} */
   #utterance;
 
   static State = {
@@ -94,6 +107,9 @@ class VoiceAssistant {
     PROCESSING_USER_SPEECH: "PROCESSING_USER_SPEECH",
   };
 
+  /**
+   * @param {RegExp} wakePhraseRegex
+   */
   constructor(wakePhraseRegex) {
     this.#wakePhraseRegex = wakePhraseRegex;
     this.#state = VoiceAssistant.State.LISTENING_FOR_WAKE_WORD;
@@ -115,6 +131,10 @@ class VoiceAssistant {
     this.#recognition.onend = this.#onEnd.bind(this);
   }
 
+  /**
+   * @param {{wakePhraseRegex?: RegExp}} [options]
+   * @returns {Promise<VoiceAssistant>}
+   */
   static async init({ wakePhraseRegex = /ok[^a-z]+metallica/i } = {}) {
     if (
       !("webkitSpeechRecognition" in window) || !("MediaRecorder" in window) ||
@@ -129,6 +149,10 @@ class VoiceAssistant {
     return assistant;
   }
 
+  /**
+   * @param {string} text
+   * @returns {Promise<void>}
+   */
   speak(text) {
     log(`Speaking: ${text}`);
     return new Promise((resolve, reject) => {
@@ -145,12 +169,16 @@ class VoiceAssistant {
     });
   }
 
+  /**
+   * @returns {Promise<string | null>}
+   */
   getNextCommand() {
     return new Promise((resolve) => {
       this.#resolveCommand = resolve;
     });
   }
 
+  /** @returns {Promise<void>} */
   async #activate() {
     if (this.#state !== VoiceAssistant.State.LISTENING_FOR_WAKE_WORD) return;
 
@@ -169,6 +197,7 @@ class VoiceAssistant {
     }, 15000);
   }
 
+  /** @returns {Promise<void>} */
   async #stopRecording() {
     if (this.#state !== VoiceAssistant.State.RECORDING_USER_SPEECH) return;
 
@@ -192,6 +221,10 @@ class VoiceAssistant {
     this.#state = VoiceAssistant.State.LISTENING_FOR_WAKE_WORD;
   }
 
+  /**
+   * @param {SpeechRecognitionEvent} event
+   * @returns {Promise<void>}
+   */
   async #onResult(event) {
     let interimTranscript = "";
     let newlyFinalizedTranscript = "";
@@ -227,6 +260,7 @@ class VoiceAssistant {
     }
   }
 
+  /** @param {SpeechRecognitionErrorEvent} event */
   #onError(event) {
     if (this.#state === VoiceAssistant.State.RECORDING_USER_SPEECH) {
       this.#stopRecording();
