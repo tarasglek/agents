@@ -99,29 +99,34 @@ app.get("/chat/:currentChatId", (c) => {
     if (lastMsg?.type === 'message' && lastMsg.role === 'user') {
       // make me a lazy func for agents too
       const agents = await getAgents();
-      const llmStream = model.llm(agents[agents.length - 1], currentChatId);
+      try {
+        const llmStream = model.llm(agents[agents.length - 1], currentChatId);
 
-      // Trick to scroll to the new message as it streams:
-      // An anchor tag with `autofocus` will be scrolled into view by the browser.
-      // `tabindex="-1"` makes the anchor focusable without being in the tab order.
-      // The `min-height: 90vh` (90% of viewport height) on the <pre> prevents the
-      // layout from jumping around as the content streams in.
-      await stream.write(html`<div id="msgWip"><a name="${(await model.get(currentChatId)).length}" tabindex="-1" autofocus></a><pre  style="min-height: 90vh;">`.toString())
-      for await (const delta of llmStream) {
-        await stream.write(html`${delta}`.toString());
-      }
-      await stream.write("\n" + html`</pre></div>`.toString());
-      // emit some css to hide the wip message completely
-      await stream.write(html`<style>#msgWip { display: none;  }</style>`.toString());
-      // Now we can safely append the completed messages
-      const completedMessages = (await model.get(currentChatId)).slice(oldMessages.length);
-      for (const [i, msg] of completedMessages.entries()) {
-        await stream.write(await (html`
+        // Trick to scroll to the new message as it streams:
+        // An anchor tag with `autofocus` will be scrolled into view by the browser.
+        // `tabindex="-1"` makes the anchor focusable without being in the tab order.
+        // The `min-height: 90vh` (90% of viewport height) on the <pre> prevents the
+        // layout from jumping around as the content streams in.
+        await stream.write(html`<div id="msgWip"><a name="${(await model.get(currentChatId)).length}" tabindex="-1" autofocus></a><pre  style="min-height: 90vh;">`.toString())
+        for await (const delta of llmStream) {
+          await stream.write(html`${delta}`.toString());
+        }
+        await stream.write("\n" + html`</pre></div>`.toString());
+        // emit some css to hide the wip message completely
+        await stream.write(html`<style>#msgWip { display: none;  }</style>`.toString());
+        // Now we can safely append the completed messages
+        const completedMessages = (await model.get(currentChatId)).slice(oldMessages.length);
+        for (const [i, msg] of completedMessages.entries()) {
+          await stream.write(await (html`
               <div>
                 <a name="${i + oldMessages.length}"></a>
                 <pre>${stringifyYaml([msg])}</pre>
         </div>
             `).toString());
+        }
+      } catch (e) {
+        console.error(e);
+        await stream.write(html`<div class="error"><pre>${e.message}</pre></div>`.toString());
       }
     }
     await stream.write(await (chatInput.toString()));
