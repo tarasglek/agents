@@ -15,6 +15,9 @@
  */
 
 let lastLogTime = Date.now();
+/** @type {HTMLElement | null} */
+let logDiv = null;
+
 /**
  * @param {string} message
  * @param {number} [timestamp]
@@ -23,7 +26,13 @@ function log(message, timestamp) {
   const now = timestamp ?? Date.now();
   const diff = now - lastLogTime;
   lastLogTime = now;
-  console.log(`+${diff}ms ${message}`);
+  const logMessage = `+${diff}ms ${message}`;
+  console.log(logMessage);
+  if (logDiv) {
+    const logEntry = document.createElement("div");
+    logEntry.textContent = logMessage;
+    logDiv.prepend(logEntry);
+  }
 }
 
 
@@ -407,6 +416,7 @@ function updateUI(event, statusDiv, micIcon, assistant) {
 (async () => {
   const statusDiv = document.getElementById("status-div");
   const micIcon = document.getElementById("mic-icon");
+  logDiv = document.getElementById("log-div");
 
   try {
     const assistant = await VoiceAssistant.init();

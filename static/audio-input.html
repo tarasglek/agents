@@ -14,7 +14,7 @@
         }
 
         #mic-icon {
-            height: 80vh;
+            height: 60vh;
             width: auto;
             transition: fill 0.3s ease-in-out;
         }
@@ -24,6 +24,17 @@
             font-size: 2em;
             color: #333;
             text-align: center;
+        }
+
+        #log-div {
+            height: 20vh;
+            width: 80%;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+            background-color: #f9f9f9;
         }
     </style>
 </head>
@@ -35,6 +46,7 @@
             d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" />
     </svg>
     <div id="status-div"></div>
+    <div id="log-div"></div>
     <script type="module">
         // eval((await fetch('https://raw.githubusercontent.com/Kalabasa/simple-live-reload/bb65d8b3f19af8c6477cdefb0c718c1db3d0cb69/script.js')).text())
         // we fight cloudflare caching
