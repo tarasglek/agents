@@ -115,10 +115,11 @@ export class ChatModel {
     }
 
     async *llm(currentAgent: Agent, chatId?: string): AsyncGenerator<string> {
-        const msgsBeforeAI = await this.get(chatId);
+        let msgsBeforeAI = await this.get(chatId);
         const stream = await run(currentAgent, msgsBeforeAI, {
             stream: true,
         });
+        msgsBeforeAI = msgsBeforeAI.filter((msg) => !(this.options.USE_OPENROUTER && msg.type === "hosted_tool_call"));
         let historyLength = msgsBeforeAI.length;
         for await (const event of stream) {
             if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
