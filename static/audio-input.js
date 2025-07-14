@@ -412,8 +412,7 @@ function updateUI(event, statusDiv, micIcon, assistant) {
   }
 }
 
-// Usage
-(async () => {
+async function start() {
   const statusDiv = document.getElementById("status-div");
   const micIcon = document.getElementById("mic-icon");
   logDiv = document.getElementById("log-div");
@@ -434,4 +433,15 @@ function updateUI(event, statusDiv, micIcon, assistant) {
       micIcon.style.fill = "black";
     }
   }
-})();
+}
+
+// Usage
+const statusDiv = document.getElementById("status-div");
+const micIcon = document.getElementById("mic-icon");
+
+if (statusDiv) {
+  statusDiv.textContent = "Tap mic to start";
+}
+if (micIcon) {
+  micIcon.addEventListener("click", start, { once: true });
+}
