@@ -96,10 +96,12 @@ class AudioRecorder {
 }
 
 /**
- * @param {string} [wakePhrase]
+ * Initializes a voice assistant that listens for a wake word, records speech,
+ * and uses TTS and VAD-equivalent logic.
+ * @param {RegExp} [wakePhraseRegex]
  * @returns {void}
  */
-function startRecordingAndTranscription(
+function initVoiceAssistant(
   wakePhraseRegex = /ok[^a-z]+metallica/i,
 ) {
   if (
@@ -111,44 +113,54 @@ function startRecordingAndTranscription(
     );
   }
 
+  const State = {
+    LISTENING_FOR_WAKE_WORD: "LISTENING_FOR_WAKE_WORD",
+    ACTIVATING: "ACTIVATING", // Wake word detected, playing confirmation sound.
+    RECORDING_USER_SPEECH: "RECORDING_USER_SPEECH",
+    PROCESSING_USER_SPEECH: "PROCESSING_USER_SPEECH", // Speech ended, processing.
+  };
+
+  let state = State.LISTENING_FOR_WAKE_WORD;
+
   /** @type { AudioRecorder | undefined} */
   let audioRecorder;
-  let noInterimResultsTimeout;
-  let noSpeechTimeout;
+  let endOfSpeechTimeout;
+  let noSpeechAfterWakeWordTimeout;
 
-  let finalTranscript = "";
-  let speechStartedTime = 0;
+  let finalTranscriptSinceRecording = "";
 
-  async function recordingStart() {
-    log("Starting recording session.");
+  async function activate() {
+    if (state !== State.LISTENING_FOR_WAKE_WORD) return;
+
+    log("Wake phrase detected! Activating...");
+    state = State.ACTIVATING;
+
     await speak("Listening");
-    finalTranscript = "";
+    finalTranscriptSinceRecording = "";
     audioRecorder = await AudioRecorder.start();
-    speechStartedTime = Date.now();
+    state = State.RECORDING_USER_SPEECH;
+    log("Recording user speech.");
 
-    // Set a timeout to cancel if no speech is detected
-    noSpeechTimeout = setTimeout(() => {
+    // Timeout if no speech is detected after activation.
+    noSpeechAfterWakeWordTimeout = setTimeout(() => {
       log("No speech detected for 15s, cancelling recording.");
-      recordingStop();
+      stopRecording();
     }, 15000);
   }
 
-  async function recordingStop() {
-    if (!audioRecorder) {
-      return;
-    }
+  async function stopRecording() {
+    if (state !== State.RECORDING_USER_SPEECH) return;
+
     log("Stopping recording session.");
+    state = State.PROCESSING_USER_SPEECH;
 
-    clearTimeout(noInterimResultsTimeout);
-    noInterimResultsTimeout = undefined;
-
-    clearTimeout(noSpeechTimeout);
-    noSpeechTimeout = undefined;
+    clearTimeout(endOfSpeechTimeout);
+    endOfSpeechTimeout = undefined;
+    clearTimeout(noSpeechAfterWakeWordTimeout);
+    noSpeechAfterWakeWordTimeout = undefined;
 
     const audioUrl = await audioRecorder.stop();
     audioRecorder = undefined;
-    speechStartedTime = 0;
-    finalTranscript = "";
 
     if (audioUrl) {
       const audio = new Audio(audioUrl);
@@ -159,6 +171,9 @@ function startRecordingAndTranscription(
         console.warn("Audio playback failed:", error);
       });
     }
+
+    log("Processing complete. Listening for wake word.");
+    state = State.LISTENING_FOR_WAKE_WORD;
   }
 
   // Initialize the SpeechRecognition object
@@ -171,36 +186,40 @@ function startRecordingAndTranscription(
   /** @param {SpeechRecognitionEvent} event */
   recognition.onresult = async function (event) {
     let interimTranscript = "";
+    let newlyFinalizedTranscript = "";
     for (let i = event.resultIndex; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
-        finalTranscript += event.results[i][0].transcript;
+        newlyFinalizedTranscript += event.results[i][0].transcript;
       } else {
         interimTranscript += event.results[i][0].transcript;
       }
     }
     log(
-      `Interim transcript json: ${JSON.stringify(interimTranscript)}`,
+      `Transcript update: final='${newlyFinalizedTranscript}' interim='${interimTranscript}'`,
     );
-    if (wakePhraseRegex.test(interimTranscript) && !audioRecorder) {
-      log("Wake phrase detected!");
-      await recordingStart();
-    }
-    if (audioRecorder) {
-      // wait longer for first utterance, then shorter for end of speech
-      const TIMEOUT = !(interimTranscript.length + finalTranscript.length)
-        ? 4000
-        : 500;
-      clearTimeout(noInterimResultsTimeout);
-      noInterimResultsTimeout = undefined;
-      log("[re]-set noInterimResultsTimeout");
-      noInterimResultsTimeout = setTimeout(recordingStop, TIMEOUT);
+
+    if (state === State.LISTENING_FOR_WAKE_WORD) {
+      if (wakePhraseRegex.test(interimTranscript)) {
+        await activate();
+      }
+    } else if (state === State.RECORDING_USER_SPEECH) {
+      finalTranscriptSinceRecording += newlyFinalizedTranscript;
+
+      // VAD-equivalent: reset timeout if we are getting new transcript parts.
+      const hasSpeech =
+        finalTranscriptSinceRecording.length + interimTranscript.length > 0;
+      const timeout = hasSpeech ? 500 : 4000; // Shorter timeout after speech starts.
+
+      clearTimeout(endOfSpeechTimeout);
+      log(`[re]-set endOfSpeechTimeout (${timeout}ms)`);
+      endOfSpeechTimeout = setTimeout(stopRecording, timeout);
     }
   };
 
   /** @param {SpeechRecognitionErrorEvent} event */
   recognition.onerror = function (event) {
-    if (audioRecorder) {
-      recordingStop();
+    if (state === State.RECORDING_USER_SPEECH) {
+      stopRecording();
     }
     console.error("Error occurred in recognition: " + event.error);
   };
@@ -211,10 +230,10 @@ function startRecordingAndTranscription(
 
   recognition.onspeechstart = function () {
     log("Speech has been detected");
-    if (noSpeechTimeout) {
-      clearTimeout(noSpeechTimeout);
-      noSpeechTimeout = undefined;
-      log("Cleared no-speech timeout.");
+    if (state === State.RECORDING_USER_SPEECH && noSpeechAfterWakeWordTimeout) {
+      clearTimeout(noSpeechAfterWakeWordTimeout);
+      noSpeechAfterWakeWordTimeout = undefined;
+      log("Cleared no-speech-after-wake-word timeout.");
     }
   };
 
@@ -230,7 +249,7 @@ function startRecordingAndTranscription(
 // Usage
 (() => {
   try {
-    startRecordingAndTranscription();
+    initVoiceAssistant();
     log("Continuous speech recognition started.");
   } catch (err) {
     console.error("An error occurred:", err);
