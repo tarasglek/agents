@@ -1,4 +1,4 @@
-import { Agent, MCPServerStdio, tool, webSearchTool } from "@openai/agents";
+import { Agent, MCPServerStdio, setTracingDisabled, tool, webSearchTool } from "@openai/agents";
 import { RECOMMENDED_PROMPT_PREFIX } from '@openai/agents-core/extensions';
 
 import { ClientOptions, OpenAI } from "openai";
@@ -34,6 +34,7 @@ export async function initAgents(options: { USE_OPENROUTER: boolean, USE_TRACE?:
   };
   const customClient = new OpenAI(openaiOptions);
   setDefaultOpenAIClient(customClient);
+  setTracingDisabled(true);
 
   const params = {
     model: options.model ?? (options.USE_OPENROUTER ? 'openrouter/cypher-alpha:free' : `${openaiPrefix}gpt-4.1-mini`),
