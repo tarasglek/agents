@@ -6,6 +6,7 @@ import { ChatModel, Message } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { stringifyYaml } from "./util.ts";
 import { Agent, AgentInputItem } from "@openai/agents-core";
+import { serveDir } from "@std/http/file-server";
 
 const messagePrinterWrapper = (source: Store<Message>) =>
   createProxyStore(source, {
@@ -162,7 +163,6 @@ app.post("/chat/:currentChatId", async (c) => {
   return c.redirect(`/chat/${currentChatId}#${(await model.get(currentChatId)).length}`);
 });
 
-import { serveDir } from "@std/http/file-server";
 
 app.use('/static/*', (c) => serveDir(c.req.raw, { urlRoot: "static", fsRoot: "static" }));
 
