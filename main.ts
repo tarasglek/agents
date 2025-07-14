@@ -61,9 +61,24 @@ async function streamAIResponse(
     // The `min-height: 90vh` (90% of viewport height) on the <pre> prevents the
     // layout from jumping around as the content streams in.
     await stream.write(html`<div id="msgWip"><a name="${(await model.get(currentChatId)).length}" tabindex="-1" autofocus></a><pre  style="min-height: 90vh;">`.toString())
+    let currentLineLength = 0;
+    const MAX_WIDTH = 80;
     for await (const delta of llmStream) {
-      // inject \n to enforce 80 char line width AI!
-      await stream.write(html`${delta}`.toString());
+      let newDelta = '';
+      for (const char of delta) {
+        if (char === '\n') {
+          newDelta += char;
+          currentLineLength = 0;
+        } else {
+          if (currentLineLength >= MAX_WIDTH) {
+            newDelta += '\n';
+            currentLineLength = 0;
+          }
+          newDelta += char;
+          currentLineLength++;
+        }
+      }
+      await stream.write(html`${newDelta}`.toString());
     }
     await stream.write("\n" + html`</pre></div>`.toString());
     // emit some css to hide the wip message completely
