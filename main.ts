@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { html } from "hono/html";
 import { stream } from "hono/streaming";
 import { initAgents } from "./agents.ts";
-import { ChatModel, Message } from "./model.ts";
+import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { stringifyYaml } from "./util.ts";
 import { Agent, AgentInputItem } from "@openai/agents-core";
@@ -16,15 +16,19 @@ const messagePrinterWrapper = (source: Store<Message>) =>
     },
   });
 
+const modelOptions: Omit<ModelOptions, "agents"> = {
+  USE_OPENROUTER: !!Deno.env.get("OPENROUTER_API_KEY"),
+  USE_TRACE: false,
+  filename: "data/history.jsonl",
+  listener: messagePrinterWrapper,
+};
+
 let agentsPromise: Promise<Agent[]> | null = null;
 function getAgents(): Promise<Agent[]> {
   if (agentsPromise) {
     return agentsPromise;
   }
-  agentsPromise = initAgents({
-    USE_OPENROUTER: !!Deno.env.get("OPENROUTER_API_KEY"),
-    USE_TRACE: false,
-  });
+  agentsPromise = initAgents(modelOptions);
   return agentsPromise;
 }
 
@@ -35,11 +39,7 @@ function getModel(): Promise<ChatModel> {
   }
   modelPromise = (async () => {
     const agents = await getAgents();
-    return await ChatModel.init({
-      filename: "data/history.jsonl",
-      agents,
-      listener: messagePrinterWrapper,
-    });
+    return await ChatModel.init({ ...modelOptions, agents });
   })();
   return modelPromise;
 }

@@ -5,7 +5,7 @@ import { parseArgs } from "jsr:@std/cli/parse-args";
 
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { initAgents } from "./agents.ts";
-import { ChatModel, Message } from "./model.ts";
+import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { stringifyYaml } from "./util.ts";
 
 
@@ -107,13 +107,15 @@ const messagePrinterWrapper = (source: Store<Message>) =>
   });
 
 async function main() {
-  const agents = await initAgents({ USE_OPENROUTER, USE_TRACE, model: flags.model });
-  const model = await ChatModel.init({
-    filename: "data/history.jsonl",
-    agents,
-    listener: messagePrinterWrapper,
+  const options: Omit<ModelOptions, "agents"> = {
+    USE_OPENROUTER,
     USE_TRACE,
-  });
+    model: flags.model,
+    filename: "data/history.jsonl",
+    listener: messagePrinterWrapper,
+  };
+  const agents = await initAgents(options);
+  const model = await ChatModel.init({ ...options, agents });
 
   let currentAgent = agents.at(-1)!;
 

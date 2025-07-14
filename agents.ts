@@ -1,4 +1,5 @@
 import { Agent, MCPServerStdio, setTracingDisabled, tool, webSearchTool } from "@openai/agents";
+import { ModelOptions } from "./model.ts";
 import { RECOMMENDED_PROMPT_PREFIX } from '@openai/agents-core/extensions';
 
 import { ClientOptions, OpenAI } from "openai";
@@ -12,7 +13,7 @@ import {
 import { setOpenAIAPI } from "@openai/agents";
 
 
-export async function initAgents(options: { USE_OPENROUTER: boolean, USE_TRACE?: boolean, model?: string }) {
+export async function initAgents(options: Pick<ModelOptions, 'USE_OPENROUTER' | 'USE_TRACE' | 'model'>) {
   let openaiPrefix = '';
   if (options.USE_OPENROUTER) {
     openaiPrefix = 'openai/';
