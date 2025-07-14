@@ -336,7 +336,7 @@ class VoiceAssistant {
     }
 
     if (this.state === VoiceAssistant.State.LISTENING_FOR_WAKE_WORD) {
-      if (this.#wakePhraseRegex.test(interimTranscript)) {
+      if (this.#wakePhraseRegex.test(interimTranscript + newlyFinalizedTranscript)) {
         await this.#activate();
       }
     } else if (this.state === VoiceAssistant.State.RECORDING_USER_SPEECH) {
