@@ -300,7 +300,7 @@ class VoiceAssistant {
       const hasSpeech =
         this.#finalTranscriptSinceRecording.length + interimTranscript.length >
         0;
-      const timeout = hasSpeech ? 1500 : 4000;
+      const timeout = hasSpeech ? 1700 : 5000;
 
       clearTimeout(this.#endOfSpeechTimeout);
       this.#endOfSpeechTimeout = setTimeout(
