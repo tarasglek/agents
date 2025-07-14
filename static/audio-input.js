@@ -114,9 +114,52 @@ function startRecordingAndTranscription(
   /** @type { AudioRecorder | undefined} */
   let audioRecorder;
   let noInterimResultsTimeout;
+  let noSpeechTimeout;
 
   let finalTranscript = "";
   let speechStartedTime = 0;
+
+  async function recordingStart() {
+    log("Starting recording session.");
+    await speak("Listening");
+    finalTranscript = "";
+    audioRecorder = await AudioRecorder.start();
+    speechStartedTime = Date.now();
+
+    // Set a timeout to cancel if no speech is detected
+    noSpeechTimeout = setTimeout(() => {
+      log("No speech detected for 15s, cancelling recording.");
+      recordingStop();
+    }, 15000);
+  }
+
+  async function recordingStop() {
+    if (!audioRecorder) {
+      return;
+    }
+    log("Stopping recording session.");
+
+    clearTimeout(noInterimResultsTimeout);
+    noInterimResultsTimeout = undefined;
+
+    clearTimeout(noSpeechTimeout);
+    noSpeechTimeout = undefined;
+
+    const audioUrl = await audioRecorder.stop();
+    audioRecorder = undefined;
+    speechStartedTime = 0;
+    finalTranscript = "";
+
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audio.onerror = (event) => {
+        console.error("Error playing audio:", event.target.error);
+      };
+      audio.play().catch((error) => {
+        console.warn("Audio playback failed:", error);
+      });
+    }
+  }
 
   // Initialize the SpeechRecognition object
   /** @type {SpeechRecognition} */
@@ -140,11 +183,7 @@ function startRecordingAndTranscription(
     );
     if (wakePhraseRegex.test(interimTranscript) && !audioRecorder) {
       log("Wake phrase detected!");
-      speak("Listening");
-      interimTranscript = "";
-      finalTranscript = "";
-      audioRecorder = await AudioRecorder.start();
-      speechStartedTime = Date.now();
+      await recordingStart();
     }
     if (audioRecorder) {
       // wait longer for first utterance, then shorter for end of speech
@@ -154,32 +193,14 @@ function startRecordingAndTranscription(
       clearTimeout(noInterimResultsTimeout);
       noInterimResultsTimeout = undefined;
       log("[re]-set noInterimResultsTimeout");
-      noInterimResultsTimeout = setTimeout(async () => {
-        speechStartedTime = 0;
-        log(`No interim results for ${TIMEOUT}ms, stopping recording.`);
-        const audioUrl = await audioRecorder.stop();
-        audioRecorder = undefined;
-        noInterimResultsTimeout = undefined;
-        interimTranscript = finalTranscript = "";
-        // factor into higher  level recordingStart(), recordingStop that reset all the transcript, dates, timeouts, etc variables
-        // and handle cancelling recording if no speech for 15s AI!
-        if (audioUrl) {
-          const audio = new Audio(audioUrl);
-          audio.onerror = (event) => {
-            console.error("Error playing audio:", event.target.error);
-          };
-          audio.play().catch((error) => {
-            console.warn("Audio playback failed:", error);
-          });
-        }
-      }, TIMEOUT);
+      noInterimResultsTimeout = setTimeout(recordingStop, TIMEOUT);
     }
   };
 
   /** @param {SpeechRecognitionErrorEvent} event */
   recognition.onerror = function (event) {
     if (audioRecorder) {
-      audioRecorder.stop();
+      recordingStop();
     }
     console.error("Error occurred in recognition: " + event.error);
   };
@@ -190,6 +211,11 @@ function startRecordingAndTranscription(
 
   recognition.onspeechstart = function () {
     log("Speech has been detected");
+    if (noSpeechTimeout) {
+      clearTimeout(noSpeechTimeout);
+      noSpeechTimeout = undefined;
+      log("Cleared no-speech timeout.");
+    }
   };
 
   recognition.onend = function () {
