@@ -96,6 +96,7 @@ app.get("/chat/:currentChatId", (c) => {
             `).toString());
       lastMsg = msg;
     }
+    // factor out  streaming in this code block into own func  AI!
     if (lastMsg?.type === 'message' && lastMsg.role === 'user') {
       // make me a lazy func for agents too
       const agents = await getAgents();
