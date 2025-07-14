@@ -338,6 +338,9 @@ class VoiceAssistant {
 
 // Usage
 (async () => {
+  const statusDiv = document.getElementById("status-div");
+  const micIcon = document.getElementById("mic-icon");
+
   try {
     const assistant = await VoiceAssistant.init();
     log("Voice assistant initialized. Listening for events...");
@@ -360,6 +363,24 @@ class VoiceAssistant {
           break;
         case "statechange":
           log(`Assistant state: ${event.state}`, event.timestamp);
+          switch (event.state) {
+            case VoiceAssistant.State.LISTENING_FOR_WAKE_WORD:
+              micIcon.style.fill = "gray";
+              statusDiv.textContent = "Say 'OK Metallica' to start.";
+              break;
+            case VoiceAssistant.State.ACTIVATING:
+              micIcon.style.fill = "orange";
+              statusDiv.textContent = "Heard you!";
+              break;
+            case VoiceAssistant.State.RECORDING_USER_SPEECH:
+              micIcon.style.fill = "red";
+              statusDiv.textContent = "Listening...";
+              break;
+            case VoiceAssistant.State.PROCESSING_USER_SPEECH:
+              micIcon.style.fill = "blue";
+              statusDiv.textContent = "Thinking...";
+              break;
+          }
           if (event.state === VoiceAssistant.State.ACTIVATING) {
             assistant.speak("Listening");
           }
@@ -369,12 +390,15 @@ class VoiceAssistant {
             `Transcript (final=${event.isFinal}): ${event.transcript}`,
             event.timestamp,
           );
+          statusDiv.textContent = event.transcript;
           break;
         case "error":
           console.error(`Assistant error: ${event.message}`);
+          statusDiv.textContent = `Error: ${event.message}`;
           break;
         case "speakstart":
           log(`Assistant speaking: "${event.text}"`, event.timestamp);
+          statusDiv.textContent = `Speaking...`;
           break;
         case "speakend":
           log("Assistant finished speaking.", event.timestamp);
@@ -383,5 +407,11 @@ class VoiceAssistant {
     }
   } catch (err) {
     console.error("An error occurred:", err);
+    if (statusDiv) {
+      statusDiv.textContent = `Error: ${err.message}`;
+    }
+    if (micIcon) {
+      micIcon.style.fill = "black";
+    }
   }
 })();
