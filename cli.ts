@@ -107,15 +107,14 @@ const messagePrinterWrapper = (source: Store<Message>) =>
   });
 
 async function main() {
-  const options: Omit<ModelOptions, "agents"> = {
+  const modelOpts: Omit<ModelOptions, "agents"> = {
     USE_OPENROUTER,
     USE_TRACE,
-    model: flags.model,
     filename: "data/history.jsonl",
     listener: messagePrinterWrapper,
   };
-  const agents = await initAgents(options);
-  const model = await ChatModel.init({ ...options, agents });
+  const agents = await initAgents({ ...modelOpts, model: flags.model });
+  const model = await ChatModel.init({ ...modelOpts, agents });
 
   let currentAgent = agents.at(-1)!;
 

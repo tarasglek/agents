@@ -19,7 +19,6 @@ export type ModelOptions = {
     listener?: (source: Store<Message>) => Store<Message>;
     USE_TRACE?: boolean;
     USE_OPENROUTER?: boolean;
-    model?: string;
 };
 
 export class Chats extends ProxyStore<Chat> {
