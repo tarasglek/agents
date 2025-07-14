@@ -5,7 +5,7 @@ import { initAgents } from "./agents.ts";
 import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { stringifyYaml } from "./util.ts";
-import { Agent, AgentInputItem } from "@openai/agents-core";
+import { Agent, AgentInputItem, AssistantMessageItem } from "@openai/agents-core";
 import { serveDir } from "@std/http/file-server";
 
 const messagePrinterWrapper = (source: Store<Message>) =>
@@ -51,6 +51,7 @@ async function streamAIResponse(
   oldMessages: Message[],
 ) {
   const agents = await getAgents();
+  //append to text
   try {
     const llmStream = model.llm(agents[agents.length - 1], currentChatId);
 
@@ -61,6 +62,7 @@ async function streamAIResponse(
     // layout from jumping around as the content streams in.
     await stream.write(html`<div id="msgWip"><a name="${(await model.get(currentChatId)).length}" tabindex="-1" autofocus></a><pre  style="min-height: 90vh;">`.toString())
     for await (const delta of llmStream) {
+      // inject \n to enforce 80 char line width AI!
       await stream.write(html`${delta}`.toString());
     }
     await stream.write("\n" + html`</pre></div>`.toString());
