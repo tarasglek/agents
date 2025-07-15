@@ -391,16 +391,21 @@ class VoiceAssistant {
 /**
  * @param {VoiceAssistantEvent} event
  * @param {HTMLElement} statusDiv
- * @param {SVGElement} micIcon
+ * @param {SVGElement} micIconOn
+ * @param {SVGElement} micIconOff
  * @param {VoiceAssistant} assistant
  * @param {HTMLAudioElement} activationSound
  */
-function updateUI(event, statusDiv, micIcon, assistant, activationSound) {
+function updateUI(event, statusDiv, micIconOn, micIconOff, assistant, activationSound) {
   if (assistant.isMuted) {
-    micIcon.style.fill = "black";
+    micIconOn.style.display = "none";
+    micIconOff.style.display = "block";
     statusDiv.textContent = "Muted. Tap mic to unmute.";
     return;
   }
+
+  micIconOn.style.display = "block";
+  micIconOff.style.display = "none";
 
   switch (event.type) {
     case "command":
@@ -422,19 +427,19 @@ function updateUI(event, statusDiv, micIcon, assistant, activationSound) {
       log(`Assistant state: ${event.state}`, event.timestamp);
       switch (event.state) {
         case VoiceAssistant.State.LISTENING_FOR_WAKE_WORD:
-          micIcon.style.fill = "gray";
+          micIconOn.style.fill = "red";
           statusDiv.textContent = "Say 'OK Metallica' to start.";
           break;
         case VoiceAssistant.State.ACTIVATING:
-          micIcon.style.fill = "orange";
+          micIconOn.style.fill = "orange";
           statusDiv.textContent = "Heard you!";
           break;
         case VoiceAssistant.State.RECORDING_USER_SPEECH:
-          micIcon.style.fill = "red";
+          micIconOn.style.fill = "green";
           statusDiv.textContent = "Listening...";
           break;
         case VoiceAssistant.State.PROCESSING_USER_SPEECH:
-          micIcon.style.fill = "blue";
+          micIconOn.style.fill = "blue";
           statusDiv.textContent = "Thinking...";
           break;
       }
@@ -466,7 +471,8 @@ function updateUI(event, statusDiv, micIcon, assistant, activationSound) {
 // Usage
 (async () => {
   const statusDiv = document.getElementById("status-div");
-  const micIcon = document.getElementById("mic-icon");
+  const micIconOn = document.getElementById("mic-icon-on");
+  const micIconOff = document.getElementById("mic-icon-off");
   logDiv = document.getElementById("log-div");
   const activationSound = /** @type {HTMLAudioElement} */ (document.getElementById("activation-sound"));
 
@@ -474,18 +480,20 @@ function updateUI(event, statusDiv, micIcon, assistant, activationSound) {
     const assistant = await VoiceAssistant.init();
     log("Voice assistant initialized. Listening for events...");
 
-    micIcon.addEventListener("click", () => assistant.toggleMute());
+    micIconOn.addEventListener("click", () => assistant.toggleMute());
+    micIconOff.addEventListener("click", () => assistant.toggleMute());
 
     for await (const event of assistant.events()) {
-      updateUI(event, statusDiv, micIcon, assistant, activationSound);
+      updateUI(event, statusDiv, micIconOn, micIconOff, assistant, activationSound);
     }
   } catch (err) {
     console.error("An error occurred:", err);
     if (statusDiv) {
       statusDiv.textContent = `Error: ${err.message}`;
     }
-    if (micIcon) {
-      micIcon.style.fill = "black";
+    if (micIconOn && micIconOff) {
+      micIconOn.style.display = "none";
+      micIconOff.style.display = "block";
     }
   }
 })();
