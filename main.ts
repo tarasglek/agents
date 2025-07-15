@@ -6,17 +6,11 @@ import { createProxyStore, Store } from "./storage-combinators.ts";
 import { Agent, AgentInputItem } from "@openai/agents-core";
 import { serveDir } from "@std/http/file-server";
 import {
+  renderFooter,
   renderHeader,
   renderMessage,
   streamAIResponse,
 } from "./template/chat/lib.ts";
-import chatInputTmpl from "./template/chat/chat-input.html" with {
-  type: "text",
-};
-import newChatButtonTmpl from "./template/chat/new-chat-button.html" with {
-  type: "text",
-};
-import footerTmpl from "./template/chat/footer.html" with { type: "text" };
 
 const messagePrinterWrapper = (source: Store<Message>) =>
   createProxyStore(source, {
@@ -80,9 +74,7 @@ app.get("/chat/:currentChatId", (c) => {
     if (lastMsg?.type === "message" && lastMsg.role === "user") {
       await streamAIResponse(stream, model, currentChatId, oldMessages, agents);
     }
-    await stream.write(chatInputTmpl);
-    await stream.write(newChatButtonTmpl);
-    await stream.write(footerTmpl);
+    await stream.write(renderFooter());
   });
 });
 
