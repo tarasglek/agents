@@ -5,9 +5,11 @@ import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { Agent, AgentInputItem } from "@openai/agents-core";
 import { serveDir } from "@std/http/file-server";
-import { renderMessage, streamAIResponse } from "./template/chat/lib.ts";
-
-import headerTmpl from "./template/chat/header.html" with { type: "text" };
+import {
+  renderHeader,
+  renderMessage,
+  streamAIResponse,
+} from "./template/chat/lib.ts";
 import chatInputTmpl from "./template/chat/chat-input.html" with {
   type: "text",
 };
@@ -64,7 +66,7 @@ app.get("/chat/:currentChatId", (c) => {
   const { currentChatId } = c.req.param();
   c.header("Content-Type", "text/html; charset=utf-8");
   return stream(c, async (stream) => {
-    await stream.write(headerTmpl.replace("{currentChatId}", currentChatId));
+    await stream.write(renderHeader(currentChatId));
 
     const model = await getModel();
     const agents = await getAgents();
