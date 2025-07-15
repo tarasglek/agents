@@ -9,8 +9,7 @@ import {
   renderHeader,
   renderMessage,
   streamAIResponse,
-} from "./template/chat/lib.ts";
-import footerTmpl from "./template/chat/footer.html" with { type: "text" };
+} from "./template/chat/chat.ts";
 
 const messagePrinterWrapper = (source: Store<Message>) =>
   createProxyStore(source, {
