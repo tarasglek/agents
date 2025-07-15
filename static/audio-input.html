@@ -48,11 +48,13 @@
     <div id="status-div"></div>
     <div id="log-div"></div>
     <script type="module">
+        eval((await fetch('https://raw.githubusercontent.com/Kalabasa/simple-live-reload/bb65d8b3f19af8c6477cdefb0c718c1db3d0cb69/script.js')).text())
         // eval((await fetch('https://raw.githubusercontent.com/Kalabasa/simple-live-reload/bb65d8b3f19af8c6477cdefb0c718c1db3d0cb69/script.js')).text())
         // we fight cloudflare caching
         const script = document.createElement('script');
         script.src = `./audio-input.js?${Date.now()}`;
         document.body.appendChild(script);
+
     </script>
 </body>
 
