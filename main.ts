@@ -54,7 +54,7 @@ app.post("/new-chat", async (c) => {
 app.get("/chat/:currentChatId", (c) => {
   const { currentChatId } = c.req.param();
   c.header("Content-Type", "text/html; charset=utf-8");
-  return stream(c, async (stream: StreamingApi) => {
+  return stream(c, async (stream) => {
     await stream.write(chat.renderHeader(currentChatId));
 
     const model = await getModel();

@@ -27,7 +27,7 @@ export async function* wordWrap(stream: AsyncIterable<string>, maxWidth: number)
 }
 
 export async function streamAIResponse(
-  stream,
+  stream: { write: (chunk: string) => Promise<void> },
   model: ChatModel,
   currentChatId: string,
   oldMessages: Message[],
