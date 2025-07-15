@@ -200,14 +200,27 @@ app.post("/chat/:currentChatId", async (c) => {
 });
 
 
-app.use('/static/*', (c) => serveDir(c.req.raw, {
-  urlRoot: "static",
-  fsRoot: "static",
-  headers: [
-    "Cache-Control: no-cache, no-store, must-revalidate",
-    "Pragma: no-cache",
-    "Expires: 0",
-  ],
-}));
+app.use('/static/*', async (c) => {
+  const serveOptions = {
+    urlRoot: "static",
+    fsRoot: "static",
+    headers: [
+      "Cache-Control: no-cache, no-store, must-revalidate",
+      "Pragma: no-cache",
+      "Expires: 0",
+    ],
+  };
+
+  if (c.req.method === "HEAD") {
+    // serveDir doesn't support HEAD, so we fake it by calling with GET and discarding the body
+    const getReq = new Request(c.req.url, { method: "GET", headers: c.req.headers });
+    const res = await serveDir(getReq, serveOptions);
+    // We don't need the body, so we can cancel it to free up resources.
+    await res.body?.cancel();
+    return new Response(null, { headers: res.headers, status: res.status, statusText: res.statusText });
+  }
+
+  return serveDir(c.req.raw, serveOptions);
+});
 
 export default app;
