@@ -7,6 +7,11 @@ import { Agent, AgentInputItem } from "@openai/agents-core";
 import { serveDir } from "@std/http/file-server";
 import { renderMessage, streamAIResponse } from "./template/chat/lib.ts";
 
+import headerTmpl from "./template/chat/header.html" with { type: "text" };
+import chatInputTmpl from "./template/chat/chat-input.html" with { type: "text" };
+import newChatButtonTmpl from "./template/chat/new-chat-button.html" with { type: "text" };
+import footerTmpl from "./template/chat/footer.html" with { type: "text" };
+
 const messagePrinterWrapper = (source: Store<Message>) =>
   createProxyStore(source, {
     async put(superPut, ref, data) {
@@ -55,7 +60,6 @@ app.get("/chat/:currentChatId", (c) => {
   const { currentChatId } = c.req.param();
   c.header('Content-Type', 'text/html; charset=utf-8');
   return stream(c, async (stream) => {
-    const headerTmpl = await Deno.readTextFile("template/chat/header.html");
     await stream.write(headerTmpl.replace('{currentChatId}', currentChatId));
 
     const model = await getModel();
@@ -70,9 +74,9 @@ app.get("/chat/:currentChatId", (c) => {
     if (lastMsg?.type === 'message' && lastMsg.role === 'user') {
       await streamAIResponse(stream, model, currentChatId, oldMessages, agents);
     }
-    await stream.write(await Deno.readTextFile("template/chat/chat-input.html"));
-    await stream.write(await Deno.readTextFile("template/chat/new-chat-button.html"));
-    await stream.write(await Deno.readTextFile("template/chat/footer.html"));
+    await stream.write(chatInputTmpl);
+    await stream.write(newChatButtonTmpl);
+    await stream.write(footerTmpl);
   });
 });
 
