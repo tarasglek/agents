@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { stream, StreamingApi } from "hono/streaming";
+import { stream } from "hono/streaming";
 import { initAgents } from "./agents.ts";
 import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
