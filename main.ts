@@ -5,11 +5,7 @@ import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { Agent, AgentInputItem } from "@openai/agents-core";
 import { serveDir } from "@std/http/file-server";
-import {
-  renderHeader,
-  renderMessage,
-  streamAIResponse,
-} from "./template/chat/chat.ts";
+import * as chat from "./template/chat/chat.ts";
 
 const messagePrinterWrapper = (source: Store<Message>) =>
   createProxyStore(source, {
@@ -59,7 +55,7 @@ app.get("/chat/:currentChatId", (c) => {
   const { currentChatId } = c.req.param();
   c.header("Content-Type", "text/html; charset=utf-8");
   return stream(c, async (stream) => {
-    await stream.write(renderHeader(currentChatId));
+    await stream.write(chat.renderHeader(currentChatId));
 
     const model = await getModel();
     const agents = await getAgents();
@@ -67,13 +63,13 @@ app.get("/chat/:currentChatId", (c) => {
     let lastMsg: Message | null = null;
     const oldMessages = await model.get(currentChatId);
     for (const [i, msg] of oldMessages.entries()) {
-      await stream.write(await renderMessage(msg, i));
+      await stream.write(await chat.renderMessage(msg, i));
       lastMsg = msg;
     }
     if (lastMsg?.type === "message" && lastMsg.role === "user") {
-      await streamAIResponse(stream, model, currentChatId, oldMessages, agents);
+      await chat.streamAIResponse(stream, model, currentChatId, oldMessages, agents);
     }
-    await stream.write(footerTmpl);
+    await stream.write(chat.footer);
   });
 });
 

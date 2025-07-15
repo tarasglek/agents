@@ -3,7 +3,7 @@ import { type SSEStreamingApi } from "hono/streaming";
 import { Agent } from "@openai/agents-core";
 import { ChatModel, Message } from "../../model.ts";
 import { stringifyYaml } from "../../util.ts";
-import footer from "./footer.html" with { type: "text" };
+export { default as footer } from "./footer.html" with { type: "text" };
 
 
 export async function* wordWrap(stream: AsyncIterable<string>, maxWidth: number): AsyncGenerator<string> {
