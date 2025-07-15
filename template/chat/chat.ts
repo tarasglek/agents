@@ -1,5 +1,4 @@
 import { html } from "hono/html";
-import { type SSEStreamingApi } from "hono/streaming";
 import { Agent } from "@openai/agents-core";
 import { ChatModel, Message } from "../../model.ts";
 import { stringifyYaml } from "../../util.ts";
@@ -28,7 +27,7 @@ export async function* wordWrap(stream: AsyncIterable<string>, maxWidth: number)
 }
 
 export async function streamAIResponse(
-  stream: SSEStreamingApi,
+  stream,
   model: ChatModel,
   currentChatId: string,
   oldMessages: Message[],
