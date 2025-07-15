@@ -33,17 +33,11 @@ function watch(urlString) {
     console.log("[simple-live-reload] watching", url.href);
   }
 
-  let focused = false;
   let etag, lastModified, contentLength;
   let request = { method: "head", cache: "no-store" };
 
   async function check() {
-    try {
-      if (document.hidden) return;
-      if (focused) return;
-    } finally {
-      focused = document.hasFocus();
-    }
+    if (document.hidden) return;
 
     const res = await fetch(url, request);
     if (res.status === 405 || res.status === 501) {
@@ -79,7 +73,7 @@ function watch(urlString) {
   }
 
   check();
-  setInterval(check, interval);
+  window.addEventListener("focus", check);
   document.addEventListener(
     "visibilitychange",
     () => !document.hidden && check(),
