@@ -393,8 +393,9 @@ class VoiceAssistant {
  * @param {HTMLElement} statusDiv
  * @param {SVGElement} micIcon
  * @param {VoiceAssistant} assistant
+ * @param {HTMLAudioElement} activationSound
  */
-function updateUI(event, statusDiv, micIcon, assistant) {
+function updateUI(event, statusDiv, micIcon, assistant, activationSound) {
   if (assistant.isMuted) {
     micIcon.style.fill = "black";
     statusDiv.textContent = "Muted. Tap mic to unmute.";
@@ -404,14 +405,15 @@ function updateUI(event, statusDiv, micIcon, assistant) {
   switch (event.type) {
     case "command":
       if (event.audioUrl) {
-        log(`Got command, playing audio from ${event.audioUrl}`, event.timestamp);
-        const audio = new Audio(event.audioUrl);
-        audio.onerror = (e) => {
-          console.error("Error playing audio:", e.target.error);
-        };
-        audio.play().catch((error) => {
-          console.warn("Audio playback failed:", error);
-        });
+        log(`Got command, audio available at ${event.audioUrl}`, event.timestamp);
+        // To avoid confusion, we don't play back the user's command.
+        // const audio = new Audio(event.audioUrl);
+        // audio.onerror = (e) => {
+        //   console.error("Error playing audio:", e.target.error);
+        // };
+        // audio.play().catch((error) => {
+        //   console.warn("Audio playback failed:", error);
+        // });
       } else {
         log("No command recorded.", event.timestamp);
       }
@@ -437,7 +439,7 @@ function updateUI(event, statusDiv, micIcon, assistant) {
           break;
       }
       if (event.state === VoiceAssistant.State.ACTIVATING) {
-        assistant.speak("Listening");
+        activationSound.play().catch(e => console.error("Activation sound failed to play", e));
       }
       break;
     case "transcript":
@@ -466,6 +468,7 @@ function updateUI(event, statusDiv, micIcon, assistant) {
   const statusDiv = document.getElementById("status-div");
   const micIcon = document.getElementById("mic-icon");
   logDiv = document.getElementById("log-div");
+  const activationSound = /** @type {HTMLAudioElement} */ (document.getElementById("activation-sound"));
 
   try {
     const assistant = await VoiceAssistant.init();
@@ -474,7 +477,7 @@ function updateUI(event, statusDiv, micIcon, assistant) {
     micIcon.addEventListener("click", () => assistant.toggleMute());
 
     for await (const event of assistant.events()) {
-      updateUI(event, statusDiv, micIcon, assistant);
+      updateUI(event, statusDiv, micIcon, assistant, activationSound);
     }
   } catch (err) {
     console.error("An error occurred:", err);
