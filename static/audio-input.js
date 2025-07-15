@@ -103,7 +103,7 @@ class AudioRecorder {
 class VoiceAssistant {
   /** @type {string} */
   #state;
-  #isMuted = true;
+  #isMuted = false;
   /** @type {RegExp} */
   #wakePhraseRegex;
   /** @type {SpeechRecognition} */
