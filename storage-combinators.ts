@@ -69,7 +69,7 @@ export class DictStore<T> extends Store<T> {
  * to be an object containing data and optional metadata.
  */
 export abstract class StoreWithMetadata<D, M>
-  extends Store<{ data: D; metadata?: M }> { }
+  extends Store<{ data: D; metadata?: M }> {}
 
 /**
  * A Store for fetching resources over HTTP.
@@ -235,10 +235,24 @@ export class ProxyStore<T> extends Store<T> {
 }
 
 type OperationOverrides<T> = {
-  get?: (superGet: (ref: string) => Promise<T | null>, ref: string) => Promise<T | null>;
-  put?: (superPut: (ref: string, data: T) => Promise<void>, ref: string, data: T) => Promise<void>;
-  merge?: (superMerge: (ref: string, data: T) => Promise<void>, ref: string, data: T) => Promise<void>;
-  delete?: (superDelete: (ref: string) => Promise<void>, ref: string) => Promise<void>;
+  get?: (
+    superGet: (ref: string) => Promise<T | null>,
+    ref: string,
+  ) => Promise<T | null>;
+  put?: (
+    superPut: (ref: string, data: T) => Promise<void>,
+    ref: string,
+    data: T,
+  ) => Promise<void>;
+  merge?: (
+    superMerge: (ref: string, data: T) => Promise<void>,
+    ref: string,
+    data: T,
+  ) => Promise<void>;
+  delete?: (
+    superDelete: (ref: string) => Promise<void>,
+    ref: string,
+  ) => Promise<void>;
 };
 
 export function createProxyStore<T>(

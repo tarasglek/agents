@@ -8,7 +8,6 @@ import { initAgents } from "./agents.ts";
 import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { stringifyYaml } from "./util.ts";
 
-
 const flags = parseArgs(Deno.args, {
   string: ["provider", "model"],
   boolean: ["trace", "help"],
@@ -44,7 +43,11 @@ const USE_TRACE = flags.trace ?? false;
 /**
  * THis is written stupidly cos ai wrote it to serve as a demo of switching agents and deleting messages
  */
-async function handleCommand(userInput: string, currentAgent: Agent, model: ChatModel): Promise<Agent> {
+async function handleCommand(
+  userInput: string,
+  currentAgent: Agent,
+  model: ChatModel,
+): Promise<Agent> {
   const [command, ...args] = userInput.slice(1).split(" ");
   if (command === "help") {
     console.log("Available commands:");
@@ -64,7 +67,8 @@ async function handleCommand(userInput: string, currentAgent: Agent, model: Chat
     } else {
       const agentIndex = parseInt(args[0], 10);
       if (
-        !isNaN(agentIndex) && agentIndex >= 0 && agentIndex < model.agents.length
+        !isNaN(agentIndex) && agentIndex >= 0 &&
+        agentIndex < model.agents.length
       ) {
         currentAgent = model.agents[agentIndex];
         console.log(`Switched to agent: ${currentAgent.name}`);

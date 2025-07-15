@@ -8,8 +8,12 @@ import { serveDir } from "@std/http/file-server";
 import { renderMessage, streamAIResponse } from "./template/chat/lib.ts";
 
 import headerTmpl from "./template/chat/header.html" with { type: "text" };
-import chatInputTmpl from "./template/chat/chat-input.html" with { type: "text" };
-import newChatButtonTmpl from "./template/chat/new-chat-button.html" with { type: "text" };
+import chatInputTmpl from "./template/chat/chat-input.html" with {
+  type: "text",
+};
+import newChatButtonTmpl from "./template/chat/new-chat-button.html" with {
+  type: "text",
+};
 import footerTmpl from "./template/chat/footer.html" with { type: "text" };
 
 const messagePrinterWrapper = (source: Store<Message>) =>
@@ -58,20 +62,20 @@ app.post("/new-chat", async (c) => {
 
 app.get("/chat/:currentChatId", (c) => {
   const { currentChatId } = c.req.param();
-  c.header('Content-Type', 'text/html; charset=utf-8');
+  c.header("Content-Type", "text/html; charset=utf-8");
   return stream(c, async (stream) => {
-    await stream.write(headerTmpl.replace('{currentChatId}', currentChatId));
+    await stream.write(headerTmpl.replace("{currentChatId}", currentChatId));
 
     const model = await getModel();
     const agents = await getAgents();
 
     let lastMsg: Message | null = null;
-    const oldMessages = await model.get(currentChatId)
-    for (const [i, msg] of (oldMessages).entries()) {
+    const oldMessages = await model.get(currentChatId);
+    for (const [i, msg] of oldMessages.entries()) {
       await stream.write(await renderMessage(msg, i));
       lastMsg = msg;
     }
-    if (lastMsg?.type === 'message' && lastMsg.role === 'user') {
+    if (lastMsg?.type === "message" && lastMsg.role === "user") {
       await streamAIResponse(stream, model, currentChatId, oldMessages, agents);
     }
     await stream.write(chatInputTmpl);
@@ -105,11 +109,12 @@ app.post("/chat/:currentChatId", async (c) => {
     content: userInput.trim(),
   } as AgentInputItem;
   await model.appendMessages([msg], currentChatId);
-  return c.redirect(`/chat/${currentChatId}#${(await model.get(currentChatId)).length}`);
+  return c.redirect(
+    `/chat/${currentChatId}#${(await model.get(currentChatId)).length}`,
+  );
 });
 
-
-app.use('/static/*', async (c) => {
+app.use("/static/*", async (c) => {
   const serveOptions = {
     urlRoot: "static",
     fsRoot: "static",
@@ -122,11 +127,18 @@ app.use('/static/*', async (c) => {
 
   if (c.req.method === "HEAD") {
     // serveDir doesn't support HEAD, so we fake it by calling with GET and discarding the body
-    const getReq = new Request(c.req.url, { method: "GET", headers: c.req.headers });
+    const getReq = new Request(c.req.url, {
+      method: "GET",
+      headers: c.req.raw.headers,
+    });
     const res = await serveDir(getReq, serveOptions);
     // We don't need the body, so we can cancel it to free up resources.
     await res.body?.cancel();
-    return new Response(null, { headers: res.headers, status: res.status, statusText: res.statusText });
+    return new Response(null, {
+      headers: res.headers,
+      status: res.status,
+      statusText: res.statusText,
+    });
   }
 
   return serveDir(c.req.raw, serveOptions);

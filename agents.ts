@@ -1,9 +1,15 @@
-import { Agent, MCPServerStdio, setTracingDisabled, tool, webSearchTool } from "@openai/agents";
+import {
+  Agent,
+  MCPServerStdio,
+  setTracingDisabled,
+  tool,
+  webSearchTool,
+} from "@openai/agents";
 import { ModelOptions } from "./model.ts";
-import { RECOMMENDED_PROMPT_PREFIX } from '@openai/agents-core/extensions';
+import { RECOMMENDED_PROMPT_PREFIX } from "@openai/agents-core/extensions";
 
 import { ClientOptions, OpenAI } from "openai";
-import { z } from 'zod';
+import { z } from "zod";
 import { setDefaultOpenAIClient } from "@openai/agents";
 import {
   fetchProxyCurlLogger,
@@ -12,11 +18,14 @@ import {
 
 import { setOpenAIAPI } from "@openai/agents";
 
-
-export async function initAgents(options: Pick<ModelOptions, 'USE_OPENROUTER' | 'USE_TRACE'> & { model?: string }) {
-  let openaiPrefix = '';
+export async function initAgents(
+  options: Pick<ModelOptions, "USE_OPENROUTER" | "USE_TRACE"> & {
+    model?: string;
+  },
+) {
+  let openaiPrefix = "";
   if (options.USE_OPENROUTER) {
-    openaiPrefix = 'openai/';
+    openaiPrefix = "openai/";
     setOpenAIAPI("chat_completions");
   }
   const fetchWithPrettyJson = fetchProxyCurlLogger({
@@ -38,7 +47,10 @@ export async function initAgents(options: Pick<ModelOptions, 'USE_OPENROUTER' | 
   setTracingDisabled(true);
 
   const params = {
-    model: options.model ?? (options.USE_OPENROUTER ? 'openrouter/cypher-alpha:free' : `${openaiPrefix}gpt-4.1-mini`),
+    model: options.model ??
+      (options.USE_OPENROUTER
+        ? "openrouter/cypher-alpha:free"
+        : `${openaiPrefix}gpt-4.1-mini`),
   };
 
   const historyTutorAgent = new Agent({
@@ -76,14 +88,16 @@ export async function initAgents(options: Pick<ModelOptions, 'USE_OPENROUTER' | 
     await server.connect();
 
     const fetchUrlTool = tool({
-      name: 'fetch_url',
-      description: 'Fetch the content of a given URL using the JS fetch API',
+      name: "fetch_url",
+      description: "Fetch the content of a given URL using the JS fetch API",
       parameters: z.object({ url: z.string() }),
       async execute({ url }) {
         const fetchUrl = `https://markdown.download/${url}`;
         const response = await fetch(fetchUrl);
         if (!response.ok) {
-          throw new Error(`Failed to fetch ${fetchUrl}: ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch ${fetchUrl}: ${response.statusText}`,
+          );
         }
         return await response.text();
       },
@@ -113,19 +127,16 @@ Today's date: ${new Date().toISOString().split("T")[0]}
       mcpServers: [server],
     });
 
-
     agents.push(coder);
   } catch (_e) {
-    console.error(`Failed to load rs_filesystem mcp`)
+    console.error(`Failed to load rs_filesystem mcp`);
   }
-
-
 
   const triageAgent = new Agent({
     ...params,
     name: "Triage Agent",
-    instructions:
-      RECOMMENDED_PROMPT_PREFIX + "You determine which agent to use based on the user's question",
+    instructions: RECOMMENDED_PROMPT_PREFIX +
+      "You determine which agent to use based on the user's question",
     handoffs: agents,
   });
 

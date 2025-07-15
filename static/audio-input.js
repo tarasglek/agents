@@ -35,7 +35,6 @@ function log(message, timestamp) {
   }
 }
 
-
 class AudioRecorder {
   /**
    * @param {MediaRecorder} mediaRecorder
@@ -336,7 +335,9 @@ class VoiceAssistant {
     }
 
     if (this.state === VoiceAssistant.State.LISTENING_FOR_WAKE_WORD) {
-      if (this.#wakePhraseRegex.test(interimTranscript + newlyFinalizedTranscript)) {
+      if (
+        this.#wakePhraseRegex.test(interimTranscript + newlyFinalizedTranscript)
+      ) {
         await this.#activate();
       }
     } else if (this.state === VoiceAssistant.State.RECORDING_USER_SPEECH) {
@@ -344,7 +345,7 @@ class VoiceAssistant {
 
       const hasSpeech =
         this.#finalTranscriptSinceRecording.length + interimTranscript.length >
-        0;
+          0;
       const timeout = hasSpeech ? 1700 : 5000;
 
       clearTimeout(this.#endOfSpeechTimeout);
@@ -362,7 +363,10 @@ class VoiceAssistant {
       // We don't need to show an error for that.
       console.log("Recognition: no-speech error. Ignoring.");
     } else {
-      this.#emit({ type: "error", message: `Recognition Error: ${event.error}` });
+      this.#emit({
+        type: "error",
+        message: `Recognition Error: ${event.error}`,
+      });
       console.error("Error occurred in recognition: " + event.error);
     }
 
@@ -396,7 +400,14 @@ class VoiceAssistant {
  * @param {VoiceAssistant} assistant
  * @param {HTMLAudioElement} activationSound
  */
-function updateUI(event, statusDiv, micIconOn, micIconOff, assistant, activationSound) {
+function updateUI(
+  event,
+  statusDiv,
+  micIconOn,
+  micIconOff,
+  assistant,
+  activationSound,
+) {
   if (assistant.isMuted) {
     micIconOn.style.display = "none";
     micIconOff.style.display = "block";
@@ -410,7 +421,10 @@ function updateUI(event, statusDiv, micIconOn, micIconOff, assistant, activation
   switch (event.type) {
     case "command":
       if (event.audioUrl) {
-        log(`Got command, audio available at ${event.audioUrl}`, event.timestamp);
+        log(
+          `Got command, audio available at ${event.audioUrl}`,
+          event.timestamp,
+        );
         // To avoid confusion, we don't play back the user's command.
         // const audio = new Audio(event.audioUrl);
         // audio.onerror = (e) => {
@@ -444,7 +458,9 @@ function updateUI(event, statusDiv, micIconOn, micIconOff, assistant, activation
           break;
       }
       if (event.state === VoiceAssistant.State.ACTIVATING) {
-        activationSound.play().catch(e => console.error("Activation sound failed to play", e));
+        activationSound.play().catch((e) =>
+          console.error("Activation sound failed to play", e)
+        );
       }
       break;
     case "transcript":
@@ -474,7 +490,10 @@ function updateUI(event, statusDiv, micIconOn, micIconOff, assistant, activation
   const micIconOn = document.getElementById("mic-icon-on");
   const micIconOff = document.getElementById("mic-icon-off");
   logDiv = document.getElementById("log-div");
-  const activationSound = /** @type {HTMLAudioElement} */ (document.getElementById("activation-sound"));
+  const activationSound =
+    /** @type {HTMLAudioElement} */ (document.getElementById(
+      "activation-sound",
+    ));
 
   try {
     const assistant = await VoiceAssistant.init();
@@ -484,7 +503,14 @@ function updateUI(event, statusDiv, micIconOn, micIconOff, assistant, activation
     micIconOff.addEventListener("click", () => assistant.toggleMute());
 
     for await (const event of assistant.events()) {
-      updateUI(event, statusDiv, micIconOn, micIconOff, assistant, activationSound);
+      updateUI(
+        event,
+        statusDiv,
+        micIconOn,
+        micIconOff,
+        assistant,
+        activationSound,
+      );
     }
   } catch (err) {
     console.error("An error occurred:", err);

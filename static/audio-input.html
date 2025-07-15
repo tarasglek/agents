@@ -1,64 +1,79 @@
 <html>
-
-<head>
+  <head>
     <title>Audio Input</title>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: sans-serif;
-        }
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        font-family: sans-serif;
+      }
 
-        .mic-icon {
-            height: 60vh;
-            width: auto;
-            transition: fill 0.3s ease-in-out;
-        }
+      .mic-icon {
+        height: 60vh;
+        width: auto;
+        transition: fill 0.3s ease-in-out;
+      }
 
-        #status-div {
-            height: 10vh;
-            font-size: 2em;
-            color: #333;
-            text-align: center;
-        }
+      #status-div {
+        height: 10vh;
+        font-size: 2em;
+        color: #333;
+        text-align: center;
+      }
 
-        #log-div {
-            height: 20vh;
-            width: 80%;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 0.8em;
-            background-color: #f9f9f9;
-        }
+      #log-div {
+        height: 20vh;
+        width: 80%;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 0.8em;
+        background-color: #f9f9f9;
+      }
     </style>
-</head>
+  </head>
 
-<body>
-    <svg id="mic-icon-on" class="mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="gray">
-        <path d="M0 0h24v24H0V0z" fill="none" />
-        <path
-            d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" />
+  <body>
+    <svg
+      id="mic-icon-on"
+      class="mic-icon"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="gray"
+    >
+      <path d="M0 0h24v24H0V0z" fill="none" />
+      <path
+        d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"
+      />
     </svg>
-    <svg id="mic-icon-off" class="mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"
-        style="display: none;">
-        <path d="M0 0h24v24H0V0z" fill="none" />
-        <path
-            d="M19 11h-1.7c0 .58-.1 1.13-.27 1.64l1.27 1.27c.44-.88.7-1.87.7-2.91zM4.41 2.86L3 4.27l6 6V11c0 1.66 1.34 3 3 3 .23 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.55-.9L19.73 21l1.41-1.41L4.41 2.86zM12 13c.48 0 .91-.11 1.3-.3l-2.77-2.77c-.19.39-.3.82-.3 1.3v.77zm-1-5.18v-1.8c0-1.66 1.34-3 3-3 1.12 0 2.09.61 2.62 1.51l-4.44 4.44c-.1-.26-.18-.53-.18-.82z" />
+    <svg
+      id="mic-icon-off"
+      class="mic-icon"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="black"
+      style="display: none"
+    >
+      <path d="M0 0h24v24H0V0z" fill="none" />
+      <path
+        d="M19 11h-1.7c0 .58-.1 1.13-.27 1.64l1.27 1.27c.44-.88.7-1.87.7-2.91zM4.41 2.86L3 4.27l6 6V11c0 1.66 1.34 3 3 3 .23 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.55-.9L19.73 21l1.41-1.41L4.41 2.86zM12 13c.48 0 .91-.11 1.3-.3l-2.77-2.77c-.19.39-.3.82-.3 1.3v.77zm-1-5.18v-1.8c0-1.66 1.34-3 3-3 1.12 0 2.09.61 2.62 1.51l-4.44 4.44c-.1-.26-.18-.53-.18-.82z"
+      />
     </svg>
     <div id="status-div"></div>
     <div id="log-div"></div>
     <!-- from https://storage.googleapis.com/material-design/downloads/material_product_sounds.zip -->
-    <audio id="activation-sound"
-        src="/static/material_product_sounds/ogg/03%20Primary%20System%20Sounds/state-change_confirm-up.ogg"
-        preload="auto"></audio>
+    <audio
+      id="activation-sound"
+      src="/static/material_product_sounds/ogg/03%20Primary%20System%20Sounds/state-change_confirm-up.ogg"
+      preload="auto"
+    >
+    </audio>
     <script src="reload.js"></script>
     <script type="module" src="audio-input.js"></script>
-</body>
-
+  </body>
 </html>
