@@ -200,6 +200,14 @@ app.post("/chat/:currentChatId", async (c) => {
 });
 
 
-app.use('/static/*', (c) => serveDir(c.req.raw, { urlRoot: "static", fsRoot: "static" }));
+app.use('/static/*', (c) => serveDir(c.req.raw, {
+  urlRoot: "static",
+  fsRoot: "static",
+  headers: [
+    ["Cache-Control", "no-cache, no-store, must-revalidate"],
+    ["Pragma", "no-cache"],
+    ["Expires", "0"],
+  ],
+}));
 
 export default app;
