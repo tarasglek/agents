@@ -73,28 +73,6 @@ export function renderHeader(currentChatId: string): string {
     <main class="container">`.toString();
 }
 
-export function renderFooter(): string {
-  return html`
-<form method="POST" action="">
-  <label for="input">User</label>
-  <div style="display: flex; align-items: flex-end; gap: 0.5rem">
-    <textarea id="input" name="input" style="flex: 1"></textarea>
-    <button
-      type="submit"
-      style="flex-shrink: 0; width: 4rem; height: 4rem; padding: 1rem"
-    >
-      Send
-    </button>
-  </div>
-</form>
-<form method="POST" action="/new-chat">
-  <button type="submit">New Chat</button>
-</form>
-</main>
-</body>
-</html>`.toString();
-}
-
 export async function renderMessage(msg: Message, index: number): Promise<string> {
   return (await html`
           <div>
