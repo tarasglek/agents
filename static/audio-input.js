@@ -19,18 +19,20 @@ let lastLogTime = Date.now();
 let logDiv = null;
 
 /**
- * @param {string} message
+ * @param {string | Node} message
  * @param {number} [timestamp]
  */
 function log(message, timestamp) {
   const now = timestamp ?? Date.now();
   const diff = now - lastLogTime;
   lastLogTime = now;
-  const logMessage = `+${diff}ms ${message}`;
+  const prefix = `+${diff}ms `;
+  const logMessage =
+    prefix + (typeof message === "string" ? message : message.textContent);
   console.log(logMessage);
   if (logDiv) {
     const logEntry = document.createElement("div");
-    logEntry.textContent = logMessage;
+    logEntry.append(prefix, message);
     logDiv.prepend(logEntry);
   }
 }
@@ -421,10 +423,13 @@ function updateUI(
   switch (event.type) {
     case "command":
       if (event.audioUrl) {
-        log(
-          `Got command, audio available at ${event.audioUrl}`,
-          event.timestamp,
-        );
+        const messageNode = document.createElement("span");
+        const link = document.createElement("a");
+        link.href = event.audioUrl;
+        link.textContent = "download";
+        link.download = `command-audio-${event.timestamp}.weba`;
+        messageNode.append("Got command, audio available for ", link);
+        log(messageNode, event.timestamp);
         // To avoid confusion, we don't play back the user's command.
         // const audio = new Audio(event.audioUrl);
         // audio.onerror = (e) => {
