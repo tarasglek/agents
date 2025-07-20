@@ -5,6 +5,7 @@ import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { Agent, AgentInputItem } from "@openai/agents-core";
 import { serveDir } from "@std/http/file-server";
+import { encode } from "@std/encoding/base64";
 import * as chat from "./template/chat/chat.ts";
 
 const messagePrinterWrapper = (source: Store<Message>) =>
@@ -81,21 +82,56 @@ app.get("/", async (c) => {
 app.post("/chat/:currentChatId", async (c) => {
   const { currentChatId } = c.req.param();
   const body = await c.req.parseBody();
-  let userInput = (body as Record<string, string | File>)["input"];
-  // reject File for now
-  if (typeof userInput !== "string") {
-    return c.text("File input is not supported yet", 400);
+  console.log("Form data received:", body);
+
+  const keys = Object.keys(body);
+  let content: AgentInputItem["content"];
+
+  if (keys.length === 1 && keys[0] === "input" && typeof body.input === "string") {
+    const userInput = (body.input as string).trim();
+    if (userInput.length === 0) {
+      return c.text("Input cannot be empty", 400);
+    }
+    content = userInput;
+  } else {
+    const contentParts: ({
+      type: "input_text";
+      text: string;
+    } | {
+      type: "input_file";
+      file: string;
+    })[] = [];
+    let hasContent = false;
+
+    for (const key in body) {
+      const value = body[key];
+      if (typeof value === "string") {
+        const text = value.trim();
+        if (text.length > 0) {
+          contentParts.push({ type: "input_text", text });
+          hasContent = true;
+        }
+      } else if (value instanceof File) {
+        const arrayBuffer = await value.arrayBuffer();
+        const base64 = encode(arrayBuffer);
+        const dataUrl = `data:${value.type};base64,${base64}`;
+        contentParts.push({ type: "input_file", file: dataUrl });
+        hasContent = true;
+      }
+    }
+
+    if (!hasContent) {
+      return c.text("Input cannot be empty", 400);
+    }
+    content = contentParts;
   }
-  userInput = userInput.trim();
-  if (userInput.length === 0) {
-    return c.text("Input cannot be empty", 400);
-  }
+
   const model = await getModel();
 
   const msg = {
     type: "message",
     role: "user",
-    content: userInput.trim(),
+    content: content,
   } as AgentInputItem;
   await model.appendMessages([msg], currentChatId);
   return c.redirect(
