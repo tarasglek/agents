@@ -431,13 +431,36 @@ function updateUI(
     case "command":
       if (event.audioUrl) {
         const messageNode = document.createElement("span");
+
+        const playButton = document.createElement("a");
+        playButton.href = "#";
+        playButton.textContent = "|>";
+        playButton.title = "Play audio";
+        playButton.style.textDecoration = "none";
+        playButton.style.cursor = "pointer";
+        playButton.onclick = (e) => {
+          e.preventDefault();
+          const audio = new Audio(event.audioUrl);
+          audio.onerror = (err) => {
+            console.error("Error playing audio:", err);
+          };
+          audio.play().catch((error) => {
+            console.warn("Audio playback failed:", error);
+          });
+        };
+
         const link = document.createElement("a");
         link.href = event.audioUrl;
         link.textContent = "download";
         link.download = `command-audio-${event.timestamp}.${
           event.extension || "weba"
         }`;
-        messageNode.append("Got command, audio available for ", link);
+        messageNode.append(
+          "Got command, audio available for ",
+          playButton,
+          " ",
+          link,
+        );
         log(messageNode, event.timestamp);
         // To avoid confusion, we don't play back the user's command.
         // const audio = new Audio(event.audioUrl);
