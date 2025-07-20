@@ -85,7 +85,14 @@ app.post("/chat/:currentChatId", async (c) => {
   console.log("Form data received:", body);
 
   const keys = Object.keys(body);
-  let content: AgentInputItem["content"];
+  type ContentPart = {
+    type: "input_text";
+    text: string;
+  } | {
+    type: "input_file";
+    file: string;
+  };
+  let content: string | ContentPart[];
 
   if (keys.length === 1 && keys[0] === "input" && typeof body.input === "string") {
     const userInput = (body.input as string).trim();
@@ -94,13 +101,7 @@ app.post("/chat/:currentChatId", async (c) => {
     }
     content = userInput;
   } else {
-    const contentParts: ({
-      type: "input_text";
-      text: string;
-    } | {
-      type: "input_file";
-      file: string;
-    })[] = [];
+    const contentParts: ContentPart[] = [];
     let hasContent = false;
 
     for (const key in body) {
