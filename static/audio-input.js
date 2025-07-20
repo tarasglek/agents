@@ -7,7 +7,7 @@
 /**
  * @typedef {{type: 'statechange', state: string, timestamp: number}} StateChangeEvent
  * @typedef {{type: 'transcript', transcript: string, isFinal: boolean, timestamp: number}} TranscriptEvent
- * @typedef {{type: 'command', audioUrl: string | null, timestamp: number}} CommandEvent
+ * @typedef {{type: 'command', audioUrl: string | null, extension: string | undefined, timestamp: number}} CommandEvent
  * @typedef {{type: 'speakstart', text: string, timestamp: number}} SpeakStartEvent
  * @typedef {{type: 'speakend', timestamp: number}} SpeakEndEvent
  * @typedef {{type: 'error', message: string, timestamp: number}} ErrorEvent
@@ -56,6 +56,7 @@ class AudioRecorder {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
+      log(`Using mimeType: ${mediaRecorder.mimeType}`);
       const audioChunks = [];
 
       mediaRecorder.ondataavailable = (event) => {
@@ -72,7 +73,7 @@ class AudioRecorder {
   }
 
   /**
-   * @returns {Promise<string | null>}
+   * @returns {Promise<{audioUrl: string, extension: string} | null>}
    */
   stop() {
     return new Promise((resolve, reject) => {
@@ -83,9 +84,11 @@ class AudioRecorder {
           return;
         }
         try {
-          const audioBlob = new Blob(this.audioChunks);
+          const mimeType = this.mediaRecorder.mimeType;
+          const audioBlob = new Blob(this.audioChunks, { type: mimeType });
           const audioUrl = URL.createObjectURL(audioBlob);
-          resolve(audioUrl);
+          const extension = (mimeType.split(";")[0].split("/")[1]) || "bin";
+          resolve({ audioUrl, extension });
         } catch (error) {
           console.error("Error processing audio:", error);
           reject("Failed to process recorded audio.");
@@ -141,8 +144,8 @@ class VoiceAssistant {
         this.state === VoiceAssistant.State.ACTIVATING
       ) {
         // Don't emit a command, just stop recording and reset state.
-        this.#audioRecorder?.stop().then((url) => {
-          if (url) URL.revokeObjectURL(url); // Clean up blob URL
+        this.#audioRecorder?.stop().then((result) => {
+          if (result?.audioUrl) URL.revokeObjectURL(result.audioUrl); // Clean up blob URL
         });
         this.#audioRecorder = undefined;
         clearTimeout(this.#endOfSpeechTimeout);
@@ -297,10 +300,14 @@ class VoiceAssistant {
     clearTimeout(this.#noSpeechAfterWakeWordTimeout);
     this.#noSpeechAfterWakeWordTimeout = undefined;
 
-    const audioUrl = await this.#audioRecorder.stop();
+    const result = await this.#audioRecorder.stop();
     this.#audioRecorder = undefined;
 
-    this.#emit({ type: "command", audioUrl });
+    this.#emit({
+      type: "command",
+      audioUrl: result?.audioUrl ?? null,
+      extension: result?.extension,
+    });
 
     this.state = VoiceAssistant.State.LISTENING_FOR_WAKE_WORD;
   }
@@ -427,7 +434,9 @@ function updateUI(
         const link = document.createElement("a");
         link.href = event.audioUrl;
         link.textContent = "download";
-        link.download = `command-audio-${event.timestamp}.weba`;
+        link.download = `command-audio-${event.timestamp}.${
+          event.extension || "weba"
+        }`;
         messageNode.append("Got command, audio available for ", link);
         log(messageNode, event.timestamp);
         // To avoid confusion, we don't play back the user's command.
