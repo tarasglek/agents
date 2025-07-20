@@ -5,7 +5,7 @@ import { ChatModel, Message, ModelOptions } from "./model.ts";
 import { createProxyStore, Store } from "./storage-combinators.ts";
 import { Agent, AgentInputItem } from "@openai/agents-core";
 import { serveDir } from "@std/http/file-server";
-import { encode } from "@std/encoding/base64";
+import { encodeBase64 } from "@std/encoding/base64";
 import * as chat from "./template/chat/chat.ts";
 
 const messagePrinterWrapper = (source: Store<Message>) =>
@@ -122,7 +122,7 @@ app.post("/chat/:currentChatId", async (c) => {
         contentParts.push({ type: "input_text", text: value.trim() });
       } else if (value instanceof File) {
         const arrayBuffer = await value.arrayBuffer();
-        const base64 = encode(arrayBuffer);
+        const base64 = encodeBase64(arrayBuffer);
         const dataUrl = `data:${value.type};base64,${base64}`;
         contentParts.push({ type: "input_file", file: dataUrl });
       }
