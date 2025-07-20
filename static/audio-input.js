@@ -434,7 +434,7 @@ function updateUI(
 
         const playButton = document.createElement("a");
         playButton.href = "#";
-        playButton.textContent = "|>";
+        playButton.textContent = "▶️";
         playButton.title = "Play audio";
         playButton.style.textDecoration = "none";
         playButton.style.cursor = "pointer";
