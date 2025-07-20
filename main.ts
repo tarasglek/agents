@@ -81,10 +81,28 @@ app.get("/", async (c) => {
 
 app.post("/chat/:currentChatId", async (c) => {
   const { currentChatId } = c.req.param();
-  const body = await c.req.parseBody();
-  console.log("Form data received:", body);
+  const rawBody = await c.req.parseBody();
+  console.log("Form data received:", rawBody);
+
+  const body: Record<string, string | File> = {};
+  for (const key in rawBody) {
+    const value = rawBody[key];
+    if (value instanceof File) {
+      if (value.size > 0) {
+        body[key] = value;
+      }
+    } else if (typeof value === "string") {
+      if (value.trim().length > 0) {
+        body[key] = value;
+      }
+    }
+  }
 
   const keys = Object.keys(body);
+  if (keys.length === 0) {
+    return c.text("Input cannot be empty", 400);
+  }
+
   type ContentPart = {
     type: "input_text";
     text: string;
@@ -95,34 +113,19 @@ app.post("/chat/:currentChatId", async (c) => {
   let content: string | ContentPart[];
 
   if (keys.length === 1 && keys[0] === "input" && typeof body.input === "string") {
-    const userInput = (body.input as string).trim();
-    if (userInput.length === 0) {
-      return c.text("Input cannot be empty", 400);
-    }
-    content = userInput;
+    content = (body.input as string).trim();
   } else {
     const contentParts: ContentPart[] = [];
-    let hasContent = false;
-
     for (const key in body) {
       const value = body[key];
       if (typeof value === "string") {
-        const text = value.trim();
-        if (text.length > 0) {
-          contentParts.push({ type: "input_text", text });
-          hasContent = true;
-        }
+        contentParts.push({ type: "input_text", text: value.trim() });
       } else if (value instanceof File) {
         const arrayBuffer = await value.arrayBuffer();
         const base64 = encode(arrayBuffer);
         const dataUrl = `data:${value.type};base64,${base64}`;
         contentParts.push({ type: "input_file", file: dataUrl });
-        hasContent = true;
       }
-    }
-
-    if (!hasContent) {
-      return c.text("Input cannot be empty", 400);
     }
     content = contentParts;
   }
