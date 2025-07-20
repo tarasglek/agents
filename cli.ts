@@ -1,5 +1,7 @@
 // deno-lint-ignore-file no-process-global
 import { Agent, AgentInputItem } from "@openai/agents";
+import { encodeBase64 } from "@std/encoding/base64";
+import { contentType } from "jsr:@std/media-types/content-type";
 
 import { parseArgs } from "jsr:@std/cli/parse-args";
 
@@ -56,6 +58,7 @@ async function handleCommand(
     console.log("/agent <number> - Select an agent");
     console.log("/del-last-msg - Delete the last message");
     console.log("/clear - Start a new chat");
+    console.log("/attach <filename> - Attach a file to the conversation.");
     console.log("/quit - Exit the application");
   } else if (command === "agent") {
     if (args.length === 0) {
@@ -89,6 +92,32 @@ async function handleCommand(
   } else if (command === "clear") {
     const chatId = await model.chats.newChat();
     console.log(`New chat (id:${chatId}) started.`);
+  } else if (command === "attach") {
+    const filename = args.join(" ");
+    if (!filename) {
+      console.log("Usage: /attach <filename>");
+    } else {
+      try {
+        const fileContent = await Deno.readFile(filename);
+        const mimeType = contentType(filename) ?? "application/octet-stream";
+        const base64 = encodeBase64(fileContent);
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+        const msg: AgentInputItem = {
+          type: "message",
+          role: "user",
+          content: [
+            {
+              type: "input_file",
+              file: dataUrl,
+            },
+          ],
+        };
+        await model.appendMessages([msg]);
+        console.log(`Attached file: ${filename}`);
+      } catch (error) {
+        console.error(`Error attaching file: ${error.message}`);
+      }
+    }
   } else if (command === "quit") {
     Deno.exit(0);
   } else {
