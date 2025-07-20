@@ -82,7 +82,20 @@ app.get("/", async (c) => {
 app.post("/chat/:currentChatId", async (c) => {
   const { currentChatId } = c.req.param();
   const rawBody = await c.req.parseBody();
-  console.log("Form data received:", rawBody);
+  const loggableBody: Record<string, any> = {};
+  for (const key in rawBody) {
+    const value = rawBody[key];
+    if (value instanceof File) {
+      loggableBody[key] = {
+        name: value.name,
+        size: value.size,
+        type: value.type,
+      };
+    } else {
+      loggableBody[key] = value;
+    }
+  }
+  console.log("Form data received:", loggableBody);
 
   const body: Record<string, string | File> = {};
   for (const key in rawBody) {
