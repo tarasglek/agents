@@ -49,7 +49,7 @@ export async function initAgents(
   const params = {
     model: options.model ??
       (options.USE_OPENROUTER
-        ? "openrouter/cypher-alpha:free"
+        ? "google/gemini-2.5-flash-lite-preview-06-17"
         : `${openaiPrefix}gpt-4.1-mini`),
   };
 
