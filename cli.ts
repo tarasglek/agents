@@ -33,6 +33,7 @@ Commands within the chat:
   /agent             List or switch agents.
   /del-last-msg      Delete the last message.
   /clear             Start a new chat.
+  /submit            Submit chat history as is.
   /quit              Exit the application.
   `);
   Deno.exit(0);
@@ -58,6 +59,7 @@ async function handleCommand(
     console.log("/agent <number> - Select an agent");
     console.log("/del-last-msg - Delete the last message");
     console.log("/clear - Start a new chat");
+    console.log("/submit - Submit chat history as is");
     console.log("/attach <filename> - Attach a file to the conversation.");
     console.log("/quit - Exit the application");
   } else if (command === "agent") {
@@ -92,6 +94,15 @@ async function handleCommand(
   } else if (command === "clear") {
     const chatId = await model.chats.newChat();
     console.log(`New chat (id:${chatId}) started.`);
+  } else if (command === "submit") {
+    try {
+      for await (const delta of model.llm(currentAgent)) {
+        await process.stdout.write(delta);
+      }
+      await process.stdout.write("\n");
+    } catch (error) {
+      console.error("\nAn error occurred:", error.message);
+    }
   } else if (command === "attach") {
     const filename = args.join(" ");
     if (!filename) {
