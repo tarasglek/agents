@@ -23,7 +23,7 @@ Usage: deno run -A main.ts [options]
 An interactive chat with OpenAI agents.
 
 Options:
-  --provider <name>  Specify the provider (e.g., 'openai', 'openrouter'). Defaults to 'openai'.
+  --provider <name>  Specify the provider (e.g., 'openai', 'openrouter'). Defaults to 'openrouter'.
   --model <name>     Specify the model to use.
   --trace            Enable tracing of API requests.
   --help, -h         Show this help message.
@@ -39,7 +39,7 @@ Commands within the chat:
   Deno.exit(0);
 }
 
-const provider = flags.provider ?? "openai";
+const provider = flags.provider ?? "openrouter";
 const USE_OPENROUTER = provider === "openrouter";
 const USE_TRACE = flags.trace ?? false;
 
