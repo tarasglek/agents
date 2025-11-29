@@ -12,7 +12,7 @@ const base64Audio = await encodeAudioToBase64(audioPath);
 const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
   method: "POST",
   headers: {
-    Authorization: `Bearer <OPENROUTER_API_KEY>`, // use env var AI!
+    Authorization: `Bearer ${Deno.env.get("OPENROUTER_API_KEY")}`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
