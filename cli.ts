@@ -2,6 +2,7 @@
 import { Agent, AgentInputItem } from "@openai/agents";
 import { encodeBase64 } from "@std/encoding/base64";
 import { contentType } from "jsr:@std/media-types/content-type";
+import { extname } from "jsr:@std/path/extname";
 
 import { parseArgs } from "jsr:@std/cli/parse-args";
 
@@ -42,6 +43,22 @@ Commands within the chat:
 const provider = flags.provider ?? "openrouter";
 const USE_OPENROUTER = provider === "openrouter";
 const USE_TRACE = flags.trace ?? false;
+
+function getAudioDetails(
+  filename: string,
+  mimeType: string,
+): { isAudio: boolean; format: string } {
+  const ext = extname(filename).slice(1).toLowerCase();
+
+  if (ext === "mp3" || mimeType === "audio/mpeg") {
+    return { isAudio: true, format: "mp3" };
+  }
+  if (ext === "wav" || mimeType === "audio/wav") {
+    return { isAudio: true, format: "wav" };
+  }
+
+  return { isAudio: false, format: "" };
+}
 
 /**
  * THis is written stupidly cos ai wrote it to serve as a demo of switching agents and deleting messages
@@ -108,33 +125,42 @@ async function handleCommand(
     if (!filename) {
       console.log("Usage: /attach <filename>");
     } else {
-      /* add a utility func to detect input file format from mime and extension, only support mp3/wav...dont support other files ..attach as ` providerData?: Record<string, any> | undefined;
-    } | {
-        type: "audio";
-        audio: string | {
-            id: string;
+      try {
+        const fileContent = await Deno.readFile(filename);
+        const mimeType = contentType(filename) ?? "application/octet-stream";
+        const { isAudio, format } = getAudioDetails(filename, mimeType);
+
+        if (!isAudio) {
+          console.log(
+            `Unsupported file type: ${
+              extname(filename)
+            }. Only mp3 and wav are supported.`,
+          );
+          return currentAgent;
+        }
+
+        const base64 = encodeBase64(fileContent);
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+        const msg: AgentInputItem = {
+          type: "message",
+          role: "user",
+          content: [
+            {
+              type: "audio",
+              audio: dataUrl,
+              format: format,
+            },
+          ],
         };
-        providerData?: Record<string, any> | undefined;
-        format?: string | null | undefined;
-        transcript?: string | null | undefined;
-    })[]; */
-      // AI!
-      const fileContent = await Deno.readFile(filename);
-      const mimeType = contentType(filename) ?? "application/octet-stream";
-      const base64 = encodeBase64(fileContent);
-      const dataUrl = `data:${mimeType};base64,${base64}`;
-      const msg: AgentInputItem = {
-        type: "message",
-        role: "user",
-        content: [
-          {
-            type: "input_file",
-            file: dataUrl,
-          },
-        ],
-      };
-      await model.appendMessages([msg]);
-      console.log(`Attached file: ${filename}`);
+        await model.appendMessages([msg]);
+        console.log(`Attached file: ${filename}`);
+      } catch (error) {
+        if (error instanceof Deno.errors.NotFound) {
+          console.error(`File not found: ${filename}`);
+        } else {
+          console.error(`Error attaching file: ${error.message}`);
+        }
+      }
     }
   } else if (command === "quit") {
     Deno.exit(0);
