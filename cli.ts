@@ -108,26 +108,33 @@ async function handleCommand(
     if (!filename) {
       console.log("Usage: /attach <filename>");
     } else {
-      try {
-        const fileContent = await Deno.readFile(filename);
-        const mimeType = contentType(filename) ?? "application/octet-stream";
-        const base64 = encodeBase64(fileContent);
-        const dataUrl = `data:${mimeType};base64,${base64}`;
-        const msg: AgentInputItem = {
-          type: "message",
-          role: "user",
-          content: [
-            {
-              type: "input_file",
-              file: dataUrl,
-            },
-          ],
+      /* add a utility func to detect input file format from mime and extension, only support mp3/wav...dont support other files ..attach as ` providerData?: Record<string, any> | undefined;
+    } | {
+        type: "audio";
+        audio: string | {
+            id: string;
         };
-        await model.appendMessages([msg]);
-        console.log(`Attached file: ${filename}`);
-      } catch (error) {
-        console.error(`Error attaching file: ${error.message}`);
-      }
+        providerData?: Record<string, any> | undefined;
+        format?: string | null | undefined;
+        transcript?: string | null | undefined;
+    })[]; */
+      // AI!
+      const fileContent = await Deno.readFile(filename);
+      const mimeType = contentType(filename) ?? "application/octet-stream";
+      const base64 = encodeBase64(fileContent);
+      const dataUrl = `data:${mimeType};base64,${base64}`;
+      const msg: AgentInputItem = {
+        type: "message",
+        role: "user",
+        content: [
+          {
+            type: "input_file",
+            file: dataUrl,
+          },
+        ],
+      };
+      await model.appendMessages([msg]);
+      console.log(`Attached file: ${filename}`);
     }
   } else if (command === "quit") {
     Deno.exit(0);
