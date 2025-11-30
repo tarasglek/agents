@@ -55,6 +55,22 @@ class AudioRecorder {
   static async start() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const mimes = [
+        "audio/wav",
+        "audio/mpeg",
+        "audio/webm",
+        "audio/mp4",
+        "audio/ogg",
+      ];
+      for (const mime of mimes) {
+        log(
+          `${mime} is ${
+            MediaRecorder.isTypeSupported(mime) ? "" : "not "
+          }supported`,
+        );
+      }
+
       const mediaRecorder = new MediaRecorder(stream);
       log(`Using mimeType: ${mediaRecorder.mimeType}`);
       const audioChunks = [];
