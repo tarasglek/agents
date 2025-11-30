@@ -27,8 +27,8 @@ function log(message, timestamp) {
   const diff = now - lastLogTime;
   lastLogTime = now;
   const prefix = `+${diff}ms `;
-  const logMessage =
-    prefix + (typeof message === "string" ? message : message.textContent);
+  const logMessage = prefix +
+    (typeof message === "string" ? message : message.textContent);
   console.log(logMessage);
   if (logDiv) {
     const logEntry = document.createElement("div");
