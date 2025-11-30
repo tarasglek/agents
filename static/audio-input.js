@@ -186,8 +186,9 @@ class VoiceAssistant {
 
   /**
    * @param {RegExp} wakePhraseRegex
+   * @param {any} SpeechRecognition
    */
-  constructor(wakePhraseRegex) {
+  constructor(wakePhraseRegex, SpeechRecognition) {
     this.#wakePhraseRegex = wakePhraseRegex;
     this.#state = VoiceAssistant.State.LISTENING_FOR_WAKE_WORD; // Set initial state without event
     this.#finalTranscriptSinceRecording = "";
@@ -196,7 +197,7 @@ class VoiceAssistant {
     this.#endOfSpeechTimeout = undefined;
     this.#noSpeechAfterWakeWordTimeout = undefined;
 
-    this.#recognition = new webkitSpeechRecognition();
+    this.#recognition = new SpeechRecognition();
     this.#recognition.continuous = true;
     this.#recognition.interimResults = true;
 
@@ -255,15 +256,29 @@ class VoiceAssistant {
    * @returns {Promise<VoiceAssistant>}
    */
   static async init({ wakePhraseRegex = /ok[^a-z]+metallica/i } = {}) {
-    if (
-      !("webkitSpeechRecognition" in window) || !("MediaRecorder" in window) ||
-      !("speechSynthesis" in window)
-    ) {
-      throw new Error(
-        "SpeechRecognition, MediaRecorder, or SpeechSynthesis not supported in this browser.",
+    const SpeechRecognition = window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+    const missingFeatures = [];
+    if (!SpeechRecognition) {
+      missingFeatures.push(
+        "SpeechRecognition (window.SpeechRecognition or window.webkitSpeechRecognition)",
       );
     }
-    const assistant = new VoiceAssistant(wakePhraseRegex);
+    if (!("MediaRecorder" in window)) {
+      missingFeatures.push("MediaRecorder");
+    }
+    if (!("speechSynthesis" in window)) {
+      missingFeatures.push("SpeechSynthesis");
+    }
+
+    if (missingFeatures.length > 0) {
+      throw new Error(
+        `The following features are not supported in this browser: ${
+          missingFeatures.join(", ")
+        }.`,
+      );
+    }
+    const assistant = new VoiceAssistant(wakePhraseRegex, SpeechRecognition);
     assistant.#recognition.start();
     return assistant;
   }
