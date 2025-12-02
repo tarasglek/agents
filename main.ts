@@ -1,10 +1,12 @@
 import { Hono } from "@hono/hono";
 import type { Context } from "@hono/hono";
 import { logger } from "@hono/hono/logger";
-import { serveDir } from "@std/http/file-server";
+import { serveDir, type ServeDirOptions } from "@std/http/file-server";
 import { emailRegexpChecker, getSecret, Locker } from "@tarasglek/locker";
 
 let locker: typeof Locker | undefined;
+
+const serveDirOptions: ServeDirOptions = { fsRoot: "static" };
 
 const app = new Hono();
 
@@ -31,7 +33,7 @@ app.use("*", async (c, next) => {
   .use("*", (c, next) => locker!.oidcAuthMiddleware()(c, next))
   .use("*", (c, next) => locker!.check()(c, next))
   .get("/", async (c) => {
-    const res = await serveDir(c.req.raw, { fsRoot: "static" });
+    const res = await serveDir(c.req.raw, serveDirOptions);
     if (res.status !== 404) {
       return res;
     }
@@ -43,9 +45,7 @@ app.use("*", async (c, next) => {
     "/*",
     (c) => {
       // this actually includes content-length unlike hono's serveStatic
-      return serveDir(c.req.raw, {
-        fsRoot: "static",
-      }); // factor our args to serveDir and reuse em AI!
+      return serveDir(c.req.raw, serveDirOptions);
     },
   );
 
