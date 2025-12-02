@@ -49,7 +49,7 @@ export async function initAgents(
   const params = {
     model: options.model ??
       (options.USE_OPENROUTER
-        ? "google/gemini-2.5-flash-lite-preview-06-17"
+        ? "google/gemini-2.5-flash-preview-09-2025"
         : `${openaiPrefix}gpt-4.1-mini`),
   };
 
@@ -57,7 +57,7 @@ export async function initAgents(
     ...params,
     name: "History Tutor",
     instructions:
-      "You provide assistance with historical queries. Explain important events and context clearly. Refuse to help with non-history question",
+      "You provide assistance with historical queries. Explain important events and context clearly. Refuse to help with non-history question, explain why you think it is not history q.",
   });
 
   const mathTutorAgent = new Agent({

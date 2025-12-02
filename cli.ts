@@ -140,7 +140,7 @@ async function handleCommand(
         }
 
         const base64 = encodeBase64(fileContent);
-        const dataUrl = `data:${mimeType};base64,${base64}`;
+        const dataUrl = base64;
         const msg: AgentInputItem = {
           type: "message",
           role: "user",
