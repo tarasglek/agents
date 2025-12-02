@@ -31,6 +31,7 @@ app.use("*", async (c, next) => {
   .use("*", (c, next) => locker!.oidcAuthMiddleware()(c, next))
   .use("*", (c, next) => locker!.check()(c, next))
   .get("/", async (c) => {
+    // try to serve static/index.html or if it doesnt exist serve below as fallback AI!
     const auth = await locker!.getAuth(c);
     console.log("auth:", auth);
     return c.html(`Hello &lt;${auth?.email}&gt;! <a href="/logout">Logout</a>`);
