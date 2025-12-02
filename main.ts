@@ -45,7 +45,7 @@ app.use("*", async (c, next) => {
       // this actually includes content-length unlike hono's serveStatic
       return serveDir(c.req.raw, {
         fsRoot: "static",
-      });
+      }); // factor our args to serveDir and reuse em AI!
     },
   );
 
