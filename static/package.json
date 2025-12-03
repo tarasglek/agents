@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "watch": "watchexec -e ts,js -w src/ -w index.html -- deno run build"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
