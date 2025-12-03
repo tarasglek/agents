@@ -59,7 +59,9 @@ class AudioRecorder {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const mediaRecorder = new emr.MediaRecorder(stream, { mimeType: "audio/wav" });
+      const mediaRecorder = new emr.MediaRecorder(stream, {
+        mimeType: "audio/wav",
+      });
       log(`Using mimeType: ${mediaRecorder.mimeType}`);
       const audioChunks = [];
 

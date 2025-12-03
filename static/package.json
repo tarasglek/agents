@@ -9,6 +9,10 @@
     "preview": "vite preview",
     "watch": "watchexec -e ts,js -w src/ -w index.html -- deno run build"
   },
+  "dependencies": {
+    "extendable-media-recorder": "^9.2.31",
+    "extendable-media-recorder-wav-encoder": "^7.0.132"
+  },
   "devDependencies": {
     "typescript": "~5.9.3",
     "vite": "^7.2.4"
