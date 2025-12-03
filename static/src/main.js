@@ -1,5 +1,5 @@
 import { MediaRecorder, register } from "extendable-media-recorder";
-import { connect } from "extendable-media-recorder-wav-encoder";
+import * as wavEncoder from "extendable-media-recorder-wav-encoder";
 
 /**
  * @typedef {object} AudioRecorderResult
@@ -248,7 +248,7 @@ class VoiceAssistant {
     // "ok" or "okay" without capturing which one was said.
     wakePhraseRegex = /(?:ok|okay)[^a-z]+metallica/i,
   } = {}) {
-    await register(await connect());
+    await register(await wavEncoder.connect());
     const SpeechRecognition = window.SpeechRecognition ||
       window.webkitSpeechRecognition;
     const missingFeatures = [];
@@ -480,7 +480,7 @@ function updateUI(
         link.href = event.audioUrl;
         link.textContent = "download";
         link.download = `command-audio-${event.timestamp}.${
-          event.extension || "weba"
+          event.extension || "wav"
         }`;
         messageNode.append(
           "Got command, audio available for ",
