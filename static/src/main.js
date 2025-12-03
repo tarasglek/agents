@@ -1,4 +1,4 @@
-import { MediaRecorder, register } from "extendable-media-recorder";
+import * as emr from "extendable-media-recorder";
 import * as wavEncoder from "extendable-media-recorder-wav-encoder";
 
 /**
@@ -59,7 +59,7 @@ class AudioRecorder {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/wav" });
+      const mediaRecorder = new emr.MediaRecorder(stream, { mimeType: "audio/wav" });
       log(`Using mimeType: ${mediaRecorder.mimeType}`);
       const audioChunks = [];
 
@@ -248,7 +248,7 @@ class VoiceAssistant {
     // "ok" or "okay" without capturing which one was said.
     wakePhraseRegex = /(?:ok|okay)[^a-z]+metallica/i,
   } = {}) {
-    await register(await wavEncoder.connect());
+    await emr.register(await wavEncoder.connect());
     const SpeechRecognition = window.SpeechRecognition ||
       window.webkitSpeechRecognition;
     const missingFeatures = [];
