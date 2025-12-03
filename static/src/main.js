@@ -255,7 +255,7 @@ class VoiceAssistant {
    * @param {{wakePhraseRegex?: RegExp}} [options]
    * @returns {Promise<VoiceAssistant>}
    */
-  static async init({ wakePhraseRegex = /ok[^a-z]+metallica/i } = {}) { // change this regexp to also allow okay not just ok. AI!
+  static async init({ wakePhraseRegex = /(?:ok|okay)[^a-z]+metallica/i } = {}) {
     const SpeechRecognition = window.SpeechRecognition ||
       window.webkitSpeechRecognition;
     const missingFeatures = [];
