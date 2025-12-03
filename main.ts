@@ -6,7 +6,7 @@ import { emailRegexpChecker, getSecret, Locker } from "@tarasglek/locker";
 
 let locker: typeof Locker | undefined;
 
-const serveDirOptions: ServeDirOptions = { fsRoot: "static" };
+const serveDirOptions: ServeDirOptions = { fsRoot: "static/dist" };
 
 const app = new Hono();
 
