@@ -1,3 +1,6 @@
+import { MediaRecorder, register } from "extendable-media-recorder";
+import { connect } from "extendable-media-recorder-wav-encoder";
+
 /**
  * @typedef {object} AudioRecorderResult
  * @property {string} transcript
@@ -56,22 +59,7 @@ class AudioRecorder {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const mimes = [
-        "audio/wav",
-        "audio/mpeg",
-        "audio/webm",
-        "audio/mp4",
-        "audio/ogg",
-      ];
-      for (const mime of mimes) {
-        log(
-          `${mime} is ${
-            MediaRecorder.isTypeSupported(mime) ? "" : "not "
-          }supported`,
-        );
-      }
-
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/wav" });
       log(`Using mimeType: ${mediaRecorder.mimeType}`);
       const audioChunks = [];
 
@@ -260,6 +248,7 @@ class VoiceAssistant {
     // "ok" or "okay" without capturing which one was said.
     wakePhraseRegex = /(?:ok|okay)[^a-z]+metallica/i,
   } = {}) {
+    await register(await connect());
     const SpeechRecognition = window.SpeechRecognition ||
       window.webkitSpeechRecognition;
     const missingFeatures = [];
