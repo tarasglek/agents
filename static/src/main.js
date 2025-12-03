@@ -401,11 +401,9 @@ class VoiceAssistant {
     if (event.error === "no-speech") {
       // It's normal for the speech recognition to time out if nobody's talking.
       console.log("Recognition: no-speech error.");
-      if (this.state === VoiceAssistant.State.RECORDING_USER_SPEECH) {
-        // If we get a no-speech error while recording, it means the user
-        // has stopped talking.
-        this.#stopRecording();
-      }
+      // If we get a no-speech error while recording, it means the user
+      // has stopped talking.
+      this.#stopRecording();
       return;
     }
 
