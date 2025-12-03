@@ -255,7 +255,11 @@ class VoiceAssistant {
    * @param {{wakePhraseRegex?: RegExp}} [options]
    * @returns {Promise<VoiceAssistant>}
    */
-  static async init({ wakePhraseRegex = /(?:ok|okay)[^a-z]+metallica/i } = {}) {
+  static async init({
+    // The `?:` syntax is for a non-capturing group. It allows us to match
+    // "ok" or "okay" without capturing which one was said.
+    wakePhraseRegex = /(?:ok|okay)[^a-z]+metallica/i,
+  } = {}) {
     const SpeechRecognition = window.SpeechRecognition ||
       window.webkitSpeechRecognition;
     const missingFeatures = [];
