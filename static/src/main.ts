@@ -1,31 +1,23 @@
 import * as emr from "extendable-media-recorder";
 import * as wavEncoder from "extendable-media-recorder-wav-encoder";
 
-/**
- * @typedef {object} AudioRecorderResult
- * @property {string} transcript
- * @property {string | null} audioUrl
- */
-
-/**
- * @typedef {{type: 'statechange', state: string, timestamp: number}} StateChangeEvent
- * @typedef {{type: 'transcript', transcript: string, isFinal: boolean, timestamp: number}} TranscriptEvent
- * @typedef {{type: 'command', audioUrl: string | null, extension: string | undefined, timestamp: number}} CommandEvent
- * @typedef {{type: 'speakstart', text: string, timestamp: number}} SpeakStartEvent
- * @typedef {{type: 'speakend', timestamp: number}} SpeakEndEvent
- * @typedef {{type: 'error', message: string, timestamp: number}} ErrorEvent
- * @typedef {StateChangeEvent | TranscriptEvent | CommandEvent | SpeakStartEvent | SpeakEndEvent | ErrorEvent} VoiceAssistantEvent
- */
+interface StateChangeEvent { type: 'statechange'; state: string; timestamp: number; }
+interface TranscriptEvent { type: 'transcript'; transcript: string; isFinal: boolean; timestamp: number; }
+interface CommandEvent { type: 'command'; audioUrl: string | null; extension: string | undefined; timestamp: number; }
+interface SpeakStartEvent { type: 'speakstart'; text: string; timestamp: number; }
+interface SpeakEndEvent { type: 'speakend'; timestamp: number; }
+interface ErrorEvent { type: 'error'; message: string; timestamp: number; }
+type VoiceAssistantEvent = StateChangeEvent | TranscriptEvent | CommandEvent | SpeakStartEvent | SpeakEndEvent | ErrorEvent;
 
 let lastLogTime = Date.now();
 /** @type {HTMLElement | null} */
-let logDiv = null;
+let logDiv: HTMLElement | null = null;
 
 /**
  * @param {string | Node} message
  * @param {number} [timestamp]
  */
-function log(message, timestamp) {
+function log(message: string | Node, timestamp?: number) {
   const now = timestamp ?? Date.now();
   const diff = now - lastLogTime;
   lastLogTime = now;
@@ -41,11 +33,14 @@ function log(message, timestamp) {
 }
 
 class AudioRecorder {
+  mediaRecorder: emr.MediaRecorder;
+  audioChunks: Blob[];
+
   /**
    * @param {MediaRecorder} mediaRecorder
    * @param {Blob[]} audioChunks
    */
-  constructor(mediaRecorder, audioChunks) {
+  constructor(mediaRecorder: emr.MediaRecorder, audioChunks: Blob[]) {
     /** @type {MediaRecorder} */
     this.mediaRecorder = mediaRecorder;
     /** @type {Blob[]} */
@@ -63,7 +58,7 @@ class AudioRecorder {
         mimeType: "audio/wav",
       });
       log(`Using mimeType: ${mediaRecorder.mimeType}`);
-      const audioChunks = [];
+      const audioChunks: Blob[] = [];
 
       mediaRecorder.ondataavailable = (event) => {
         audioChunks.push(event.data);
@@ -81,7 +76,7 @@ class AudioRecorder {
   /**
    * @returns {Promise<{audioUrl: string, extension: string} | null>}
    */
-  stop() {
+  stop(): Promise<{audioUrl: string, extension: string} | null> {
     return new Promise((resolve, reject) => {
       this.mediaRecorder.onstop = () => {
         if (this.audioChunks.length === 0) {
@@ -112,27 +107,27 @@ class AudioRecorder {
  */
 class VoiceAssistant {
   /** @type {string} */
-  #state;
+  #state: string;
   #isMuted = false;
   /** @type {RegExp} */
-  #wakePhraseRegex;
+  #wakePhraseRegex: RegExp;
   /** @type {SpeechRecognition} */
-  #recognition;
+  #recognition: any;
   /** @type {AudioRecorder | undefined} */
-  #audioRecorder;
+  #audioRecorder: AudioRecorder | undefined;
   /** @type {number | undefined} */
-  #endOfSpeechTimeout;
+  #endOfSpeechTimeout: number | undefined;
   /** @type {number | undefined} */
-  #noSpeechAfterWakeWordTimeout;
+  #noSpeechAfterWakeWordTimeout: number | undefined;
   /** @type {string} */
-  #finalTranscriptSinceRecording;
+  #finalTranscriptSinceRecording: string;
   /** @type {SpeechSynthesisUtterance} */
-  #utterance;
+  #utterance: SpeechSynthesisUtterance;
 
   /** @type {VoiceAssistantEvent[]} */
-  #eventQueue = [];
+  #eventQueue: VoiceAssistantEvent[] = [];
   /** @type {(() => void) | null} */
-  #eventResolver = null;
+  #eventResolver: ((value?: void) => void) | null = null;
 
   /** @returns {boolean} */
   get isMuted() {
@@ -178,7 +173,7 @@ class VoiceAssistant {
    * @param {RegExp} wakePhraseRegex
    * @param {any} SpeechRecognition
    */
-  constructor(wakePhraseRegex, SpeechRecognition) {
+  constructor(wakePhraseRegex: RegExp, SpeechRecognition: any) {
     this.#wakePhraseRegex = wakePhraseRegex;
     this.#state = VoiceAssistant.State.LISTENING_FOR_WAKE_WORD; // Set initial state without event
     this.#finalTranscriptSinceRecording = "";
@@ -201,8 +196,8 @@ class VoiceAssistant {
   /**
    * @param {object} event - event data, timestamp will be added automatically
    */
-  #emit(event) {
-    this.#eventQueue.push({ ...event, timestamp: Date.now() });
+  #emit(event: Omit<VoiceAssistantEvent, "timestamp">) {
+    this.#eventQueue.push({ ...event, timestamp: Date.now() } as VoiceAssistantEvent);
     if (this.#eventResolver) {
       this.#eventResolver();
       this.#eventResolver = null;
@@ -224,7 +219,7 @@ class VoiceAssistant {
         const event = this.#eventQueue.shift();
         if (event) yield event;
       }
-      await new Promise((resolve) => {
+      await new Promise<void>((resolve) => {
         this.#eventResolver = resolve;
       });
     }
@@ -251,8 +246,8 @@ class VoiceAssistant {
     wakePhraseRegex = /(?:ok|okay)[^a-z]+metallica/i,
   } = {}) {
     await emr.register(await wavEncoder.connect());
-    const SpeechRecognition = window.SpeechRecognition ||
-      window.webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
     const missingFeatures = [];
     if (!SpeechRecognition) {
       missingFeatures.push(
@@ -282,10 +277,10 @@ class VoiceAssistant {
    * @param {string} text
    * @returns {Promise<void>}
    */
-  speak(text) {
+  speak(text: string) {
     if (this.#isMuted) return Promise.resolve();
     this.#emit({ type: "speakstart", text });
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.#utterance.text = text;
       this.#utterance.onend = () => {
         this.#emit({ type: "speakend" });
@@ -342,7 +337,7 @@ class VoiceAssistant {
    * @param {SpeechRecognitionEvent} event
    * @returns {Promise<void>}
    */
-  async #onResult(event) {
+  async #onResult(event: any) {
     if (this.#isMuted) return;
     let interimTranscript = "";
     let newlyFinalizedTranscript = "";
@@ -392,7 +387,7 @@ class VoiceAssistant {
   }
 
   /** @param {SpeechRecognitionErrorEvent} event */
-  #onError(event) {
+  #onError(event: any) {
     if (event.error === "no-speech") {
       // It's normal for the speech recognition to time out if nobody's talking.
       console.log("Recognition: no-speech error.");
@@ -439,12 +434,12 @@ class VoiceAssistant {
  * @param {HTMLAudioElement} activationSound
  */
 function updateUI(
-  event,
-  statusDiv,
-  micIconOn,
-  micIconOff,
-  assistant,
-  activationSound,
+  event: VoiceAssistantEvent,
+  statusDiv: HTMLElement,
+  micIconOn: SVGElement,
+  micIconOff: SVGElement,
+  assistant: VoiceAssistant,
+  activationSound: HTMLAudioElement,
 ) {
   if (assistant.isMuted) {
     micIconOn.style.display = "none";
@@ -524,7 +519,7 @@ function updateUI(
           break;
       }
       if (event.state === VoiceAssistant.State.ACTIVATING) {
-        activationSound.play().catch((e) =>
+        activationSound.play().catch((e: any) =>
           console.error("Activation sound failed to play", e)
         );
       }
@@ -565,20 +560,22 @@ function updateUI(
     const assistant = await VoiceAssistant.init();
     log("Voice assistant initialized. Listening for events...");
 
-    micIconOn.addEventListener("click", () => assistant.toggleMute());
-    micIconOff.addEventListener("click", () => assistant.toggleMute());
+    if (micIconOn) micIconOn.addEventListener("click", () => assistant.toggleMute());
+    if (micIconOff) micIconOff.addEventListener("click", () => assistant.toggleMute());
 
     for await (const event of assistant.events()) {
-      updateUI(
-        event,
-        statusDiv,
-        micIconOn,
-        micIconOff,
-        assistant,
-        activationSound,
-      );
+      if (statusDiv && micIconOn && micIconOff) {
+        updateUI(
+          event,
+          statusDiv,
+          micIconOn as SVGElement,
+          micIconOff as SVGElement,
+          assistant,
+          activationSound,
+        );
+      }
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("An error occurred:", err);
     if (statusDiv) {
       statusDiv.textContent = `Error: ${err.message}`;
