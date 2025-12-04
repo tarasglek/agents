@@ -1,13 +1,44 @@
 import * as emr from "extendable-media-recorder";
 import * as wavEncoder from "extendable-media-recorder-wav-encoder";
 
-interface StateChangeEvent { type: 'statechange'; state: string; timestamp: number; }
-interface TranscriptEvent { type: 'transcript'; transcript: string; isFinal: boolean; timestamp: number; }
-interface CommandEvent { type: 'command'; audioUrl: string | null; extension: string | undefined; timestamp: number; }
-interface SpeakStartEvent { type: 'speakstart'; text: string; timestamp: number; }
-interface SpeakEndEvent { type: 'speakend'; timestamp: number; }
-interface ErrorEvent { type: 'error'; message: string; timestamp: number; }
-type VoiceAssistantEvent = StateChangeEvent | TranscriptEvent | CommandEvent | SpeakStartEvent | SpeakEndEvent | ErrorEvent;
+interface StateChangeEvent {
+  type: "statechange";
+  state: string;
+  timestamp: number;
+}
+interface TranscriptEvent {
+  type: "transcript";
+  transcript: string;
+  isFinal: boolean;
+  timestamp: number;
+}
+interface CommandEvent {
+  type: "command";
+  audioUrl: string | null;
+  extension: string | undefined;
+  timestamp: number;
+}
+interface SpeakStartEvent {
+  type: "speakstart";
+  text: string;
+  timestamp: number;
+}
+interface SpeakEndEvent {
+  type: "speakend";
+  timestamp: number;
+}
+interface ErrorEvent {
+  type: "error";
+  message: string;
+  timestamp: number;
+}
+type VoiceAssistantEvent =
+  | StateChangeEvent
+  | TranscriptEvent
+  | CommandEvent
+  | SpeakStartEvent
+  | SpeakEndEvent
+  | ErrorEvent;
 
 let lastLogTime = Date.now();
 /** @type {HTMLElement | null} */
@@ -33,14 +64,14 @@ function log(message: string | Node, timestamp?: number) {
 }
 
 class AudioRecorder {
-  mediaRecorder: emr.MediaRecorder;
+  mediaRecorder: emr.IMediaRecorder;
   audioChunks: Blob[];
 
   /**
    * @param {MediaRecorder} mediaRecorder
    * @param {Blob[]} audioChunks
    */
-  constructor(mediaRecorder: emr.MediaRecorder, audioChunks: Blob[]) {
+  constructor(mediaRecorder: emr.IMediaRecorder, audioChunks: Blob[]) {
     /** @type {MediaRecorder} */
     this.mediaRecorder = mediaRecorder;
     /** @type {Blob[]} */
@@ -76,7 +107,7 @@ class AudioRecorder {
   /**
    * @returns {Promise<{audioUrl: string, extension: string} | null>}
    */
-  stop(): Promise<{audioUrl: string, extension: string} | null> {
+  stop(): Promise<{ audioUrl: string; extension: string } | null> {
     return new Promise((resolve, reject) => {
       this.mediaRecorder.onstop = () => {
         if (this.audioChunks.length === 0) {
@@ -197,7 +228,9 @@ class VoiceAssistant {
    * @param {object} event - event data, timestamp will be added automatically
    */
   #emit(event: Omit<VoiceAssistantEvent, "timestamp">) {
-    this.#eventQueue.push({ ...event, timestamp: Date.now() } as VoiceAssistantEvent);
+    this.#eventQueue.push(
+      { ...event, timestamp: Date.now() } as VoiceAssistantEvent,
+    );
     if (this.#eventResolver) {
       this.#eventResolver();
       this.#eventResolver = null;
@@ -560,8 +593,14 @@ function updateUI(
     const assistant = await VoiceAssistant.init();
     log("Voice assistant initialized. Listening for events...");
 
-    if (micIconOn) micIconOn.addEventListener("click", () => assistant.toggleMute());
-    if (micIconOff) micIconOff.addEventListener("click", () => assistant.toggleMute());
+    if (micIconOn) {
+      micIconOn.addEventListener("click", () =>
+        assistant.toggleMute());
+    }
+    if (micIconOff) {
+      micIconOff.addEventListener("click", () =>
+        assistant.toggleMute());
+    }
 
     for await (const event of assistant.events()) {
       if (statusDiv && micIconOn && micIconOff) {
