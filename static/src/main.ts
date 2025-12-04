@@ -40,6 +40,9 @@ type VoiceAssistantEvent =
   | SpeakEndEvent
   | ErrorEvent;
 
+type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K>
+  : never;
+
 let lastLogTime = Date.now();
 /** @type {HTMLElement | null} */
 let logDiv: HTMLElement | null = null;
@@ -227,7 +230,7 @@ class VoiceAssistant {
   /**
    * @param {object} event - event data, timestamp will be added automatically
    */
-  #emit(event: Omit<VoiceAssistantEvent, "timestamp">) {
+  #emit(event: DistributiveOmit<VoiceAssistantEvent, "timestamp">) {
     this.#eventQueue.push(
       { ...event, timestamp: Date.now() } as VoiceAssistantEvent,
     );
@@ -354,7 +357,7 @@ class VoiceAssistant {
     clearTimeout(this.#noSpeechAfterWakeWordTimeout);
     this.#noSpeechAfterWakeWordTimeout = undefined;
 
-    const result = await this.#audioRecorder.stop();
+    const result = await this.#audioRecorder!.stop();
     this.#audioRecorder = undefined;
 
     this.#emit({
@@ -497,7 +500,7 @@ function updateUI(
         playButton.style.cursor = "pointer";
         playButton.onclick = (e) => {
           e.preventDefault();
-          const audio = new Audio(event.audioUrl);
+          const audio = new Audio(event.audioUrl as string);
           audio.onerror = (err) => {
             console.error("Error playing audio:", err);
           };
@@ -584,10 +587,9 @@ function updateUI(
   const micIconOn = document.getElementById("mic-icon-on");
   const micIconOff = document.getElementById("mic-icon-off");
   logDiv = document.getElementById("log-div");
-  const activationSound =
-    /** @type {HTMLAudioElement} */ (document.getElementById(
-      "activation-sound",
-    ));
+  const activationSound = document.getElementById(
+    "activation-sound",
+  ) as HTMLAudioElement | null;
 
   try {
     const assistant = await VoiceAssistant.init();
@@ -603,12 +605,12 @@ function updateUI(
     }
 
     for await (const event of assistant.events()) {
-      if (statusDiv && micIconOn && micIconOff) {
+      if (statusDiv && micIconOn && micIconOff && activationSound) {
         updateUI(
           event,
           statusDiv,
-          micIconOn as SVGElement,
-          micIconOff as SVGElement,
+          micIconOn as unknown as SVGElement,
+          micIconOff as unknown as SVGElement,
           assistant,
           activationSound,
         );
